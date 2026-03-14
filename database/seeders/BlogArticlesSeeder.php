@@ -112,8 +112,8 @@ class BlogArticlesSeeder extends Seeder
 <h3>6. Comino del Mediterráneo</h3>
 <p>Presente desde Marruecos hasta Turquía, el comino mediterráneo tiene un perfil más suave y tostado que el latinoamericano. Se usa en el hummus libanés, en el falafel, en el ras el hanout marroquí y en las salchichas griegas.</p>
 
-<h3>7. Za'atar</h3>
-<p>El za'atar es una mezcla de especias del Levante (Líbano, Siria, Palestina, Israel) que combina tomillo seco, sésamo tostado, zumaque (sumac) y sal. Se mezcla con aceite de oliva y se unta en pan plano, o se usa como marinada para pollo. El zumaque le da una acidez cítrica única.</p>
+<h3>7. Za\'atar</h3>
+<p>El za\'atar es una mezcla de especias del Levante (Líbano, Siria, Palestina, Israel) que combina tomillo seco, sésamo tostado, zumaque (sumac) y sal. Se mezcla con aceite de oliva y se unta en pan plano, o se usa como marinada para pollo. El zumaque le da una acidez cítrica única.</p>
 
 <h3>8. Pimentón ahumado (Paprika española)</h3>
 <p>El pimentón de La Vera, ahumado sobre leña de roble, es el alma de la chorizo español, el pulpo a la gallega y el sofrito andaluz. Su sabor dulce y ahumado a la vez no tiene sustituto real. Existe en tres versiones: dulce, agridulce y picante.</p>

@@ -303,7 +303,7 @@ class PostSeeder extends Seeder
 <p>Si solo pudieras tener un cuchillo en tu cocina, debería ser un <strong>cuchillo de chef de 20-25 cm</strong>. Esta es la navaja suiza de la cocina: puede picar, cortar en juliana, deshuesar, filetear y triturar con el plano. Con un buen cuchillo de chef bien afilado, puedes hacer el 90% de las preparaciones de cocina.</p>
 
 <h2>Los 5 cuchillos esenciales</h2>
-<h3>1. Cuchillo de chef (Chef's knife)</h3>
+<h3>1. Cuchillo de chef (Chef\'s knife)</h3>
 <p>Hoja ancha y larga (18-25 cm), ligeramente curvada. Es el cuchillo de trabajo principal. La curva de la hoja permite balancear el cuchillo sobre la tabla al picar.</p>
 
 <h3>2. Cuchillo puntilla (Paring knife)</h3>
