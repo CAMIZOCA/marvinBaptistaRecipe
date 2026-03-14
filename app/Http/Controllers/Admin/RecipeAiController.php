@@ -18,17 +18,21 @@ class RecipeAiController extends Controller
     public function enhance(Recipe $recipe): JsonResponse
     {
         $userId = auth()->id();
-        $key = 'ai-enhance:' . $userId;
+        $key    = 'ai-enhance:' . $userId;
         $config = config('ai.rate_limit');
 
-        if (RateLimiter::tooManyAttempts($key, $config['attempts'])) {
-            $seconds = RateLimiter::availableIn($key);
-            return response()->json([
-                'error' => "Has alcanzado el límite de mejoras con IA. Intenta en " . ceil($seconds / 60) . " minutos.",
-            ], 429);
+        // Skip rate limiting in local/development environment
+        if (!app()->isLocal()) {
+            if (RateLimiter::tooManyAttempts($key, $config['attempts'])) {
+                $seconds = RateLimiter::availableIn($key);
+                return response()->json([
+                    'error'      => "Has alcanzado el límite de mejoras con IA. Intenta en " . ceil($seconds / 60) . " minutos.",
+                    'error_type' => 'rate_limit',
+                    'retry_in'   => $seconds,
+                ], 429);
+            }
+            RateLimiter::hit($key, $config['decay_seconds']);
         }
-
-        RateLimiter::hit($key, $config['decay_seconds']);
 
         try {
             $result = $this->enhancer->enhance($recipe);
@@ -45,11 +49,16 @@ class RecipeAiController extends Controller
                 'suggested' => $result,
             ]);
         } catch (\RuntimeException $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            return response()->json([
+                'error'      => $e->getMessage(),
+                'error_type' => 'config',
+            ], 422);
         } catch (\Exception $e) {
             report($e);
+            $detail = app()->isLocal() ? ' Detalle: ' . $e->getMessage() : '';
             return response()->json([
-                'error' => 'Ocurrió un error inesperado. Por favor intenta nuevamente.',
+                'error'      => 'Ocurrió un error inesperado al llamar a la IA.' . $detail,
+                'error_type' => 'server',
             ], 500);
         }
     }

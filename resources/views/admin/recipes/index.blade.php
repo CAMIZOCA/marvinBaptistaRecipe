@@ -95,12 +95,9 @@
         @endif
     </form>
 
-    {{-- ===================== BULK ACTIONS FORM ===================== --}}
+    {{-- ===================== BULK ACTIONS ===================== --}}
     @if(isset($recipes) && $recipes->count() > 0)
-    <form id="bulk-form" method="POST" action="{{ route('admin.recipes.bulk-action') }}">
-        @csrf
-        <input type="hidden" name="action" id="bulk-action-value" value="">
-
+    <div>
         {{-- Bulk Toolbar (hidden until items selected) --}}
         <div id="bulk-bar"
              class="hidden items-center gap-3 px-4 py-3 mb-3 bg-amber-950/60 border border-amber-700/60 rounded-xl transition-all">
@@ -241,7 +238,6 @@
                             <td class="px-4 py-3 text-center">
                                 <form method="POST" action="{{ route('admin.recipes.toggle-published', $recipe) }}" class="inline">
                                     @csrf
-                                    @method('PATCH')
                                     <button type="submit"
                                             class="relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-zinc-800 {{ $recipe->is_published ? 'bg-amber-500' : 'bg-zinc-600' }}"
                                             title="{{ $recipe->is_published ? 'Publicada - click para despublicar' : 'Borrador - click para publicar' }}">
@@ -292,7 +288,7 @@
             </div>
             @endif
         </div>
-    </form>
+    </div>
 
     @else
     {{-- Empty State --}}
@@ -335,11 +331,9 @@
 @push('scripts')
 <script>
 (function () {
-    const selectAll    = document.getElementById('select-all');
-    const bulkBar      = document.getElementById('bulk-bar');
-    const countEl      = document.getElementById('selected-count');
-    const actionInput  = document.getElementById('bulk-action-value');
-    const bulkForm     = document.getElementById('bulk-form');
+    const selectAll = document.getElementById('select-all');
+    const bulkBar   = document.getElementById('bulk-bar');
+    const countEl   = document.getElementById('selected-count');
 
     if (!selectAll) return; // no recipes on page
 
@@ -365,18 +359,12 @@
             bulkBar.classList.remove('flex');
         }
 
-        // Update select-all state
         selectAll.indeterminate = count > 0 && count < total;
         selectAll.checked       = count === total && total > 0;
 
-        // Highlight selected rows
         document.querySelectorAll('.recipe-row').forEach(row => {
             const cb = row.querySelector('.recipe-checkbox');
-            if (cb && cb.checked) {
-                row.classList.add('bg-amber-950/20');
-            } else {
-                row.classList.remove('bg-amber-950/20');
-            }
+            row.classList.toggle('bg-amber-950/20', cb && cb.checked);
         });
     }
 
@@ -386,24 +374,51 @@
         updateBar();
     });
 
-    // Individual checkbox change
+    // Individual checkboxes
     document.querySelectorAll('.recipe-checkbox').forEach(cb => {
         cb.addEventListener('change', updateBar);
     });
 
-    // Submit bulk action
+    // Submit bulk action — builds a fresh form to avoid nested-form _method conflicts
     window.submitBulk = function (action) {
         const checked = getChecked();
         if (checked.length === 0) return;
 
         if (action === 'delete') {
-            if (!confirm(`¿Eliminar ${checked.length} receta(s) seleccionada(s)?\n\nEsta acción no se puede deshacer.`)) {
+            if (!confirm('¿Eliminar ' + checked.length + ' receta(s) seleccionada(s)?\n\nEsta acción no se puede deshacer.')) {
                 return;
             }
         }
 
-        actionInput.value = action;
-        bulkForm.submit();
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('admin.recipes.bulk-action') }}';
+
+        // CSRF
+        const csrf = document.createElement('input');
+        csrf.type  = 'hidden';
+        csrf.name  = '_token';
+        csrf.value = '{{ csrf_token() }}';
+        form.appendChild(csrf);
+
+        // Action
+        const actionEl  = document.createElement('input');
+        actionEl.type   = 'hidden';
+        actionEl.name   = 'action';
+        actionEl.value  = action;
+        form.appendChild(actionEl);
+
+        // Selected IDs
+        checked.forEach(function (cb) {
+            const id   = document.createElement('input');
+            id.type    = 'hidden';
+            id.name    = 'ids[]';
+            id.value   = cb.value;
+            form.appendChild(id);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
     };
 
     // Clear selection

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\Admin\BookController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -59,6 +60,17 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
 
     // Ingredient Index
     Route::resource('ingredientes', IngredientAdminController::class)->parameters(['ingredientes' => 'ingredient']);
+
+    // Blog Posts
+    Route::prefix('blog')->name('blog.')->group(function () {
+        Route::get('/', [BlogPostController::class, 'index'])->name('index');
+        Route::get('/crear', [BlogPostController::class, 'create'])->name('create');
+        Route::post('/', [BlogPostController::class, 'store'])->name('store');
+        Route::get('/{post}/editar', [BlogPostController::class, 'edit'])->name('edit');
+        Route::put('/{post}', [BlogPostController::class, 'update'])->name('update');
+        Route::delete('/{post}', [BlogPostController::class, 'destroy'])->name('destroy');
+        Route::post('/{post}/toggle-published', [BlogPostController::class, 'togglePublished'])->name('toggle-published');
+    });
 
     // Static Pages
     Route::resource('paginas', PageAdminController::class)->parameters(['paginas' => 'page']);

@@ -594,8 +594,180 @@
             Recetas Relacionadas
         </h2>
         <div class="grid sm:grid-cols-3 gap-5">
-            @foreach($relatedRecipes->take(3) as $recipe)
-            <x-public.recipe-card :recipe="$recipe"/>
+            @foreach($relatedRecipes->take(3) as $related)
+            <x-public.recipe-card :recipe="$related"/>
+            @endforeach
+        </div>
+    </section>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════
+         SECCIÓN: TE PUEDE INTERESAR — 16 recetas en grid 4 col
+    ════════════════════════════════════════════════════════════ --}}
+    @if(isset($suggestedRecipes) && $suggestedRecipes->count() > 0)
+    <section class="mt-16 pt-12 border-t border-zinc-100" aria-label="Recetas sugeridas">
+
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-zinc-900" style="font-family: 'Playfair Display', serif;">
+                    Te puede interesar
+                </h2>
+                <p class="text-sm text-zinc-400 mt-1">Más recetas que podrían gustarte</p>
+            </div>
+            <a href="{{ route('recipes.index') }}"
+               class="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors group">
+                Ver todas las recetas
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+            @foreach($suggestedRecipes as $suggested)
+            <a href="{{ route('recipe.show', $suggested->slug) }}"
+               class="group flex flex-col bg-white rounded-2xl overflow-hidden border border-zinc-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+
+                {{-- Imagen --}}
+                <div class="aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-50 to-orange-100 shrink-0">
+                    @if($suggested->featured_image)
+                    <img src="{{ $suggested->featured_image }}"
+                         alt="{{ $suggested->image_alt ?? $suggested->title }}"
+                         loading="lazy"
+                         decoding="async"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    @else
+                    <div class="w-full h-full flex items-center justify-center">
+                        <svg class="w-10 h-10 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Título --}}
+                <div class="p-3 flex-1 flex flex-col justify-between gap-2">
+                    <h3 class="text-sm font-semibold text-zinc-900 group-hover:text-amber-600 transition-colors line-clamp-2 leading-snug">
+                        {{ $suggested->title }}
+                    </h3>
+                    @php
+                        $sTime = ($suggested->prep_time_minutes ?? 0) + ($suggested->cook_time_minutes ?? 0);
+                    @endphp
+                    @if($sTime > 0)
+                    <span class="text-xs text-zinc-400 flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        {{ $sTime }} min
+                    </span>
+                    @endif
+                </div>
+            </a>
+            @endforeach
+        </div>
+
+        <div class="mt-6 text-center sm:hidden">
+            <a href="{{ route('recipes.index') }}"
+               class="inline-flex items-center gap-2 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
+                Ver todas las recetas
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+            </a>
+        </div>
+    </section>
+    @endif
+
+    {{-- ═══════════════════════════════════════════════════════════
+         SECCIÓN: ARTÍCULOS RELACIONADOS DEL BLOG — 6 posts
+    ════════════════════════════════════════════════════════════ --}}
+    @if(isset($relatedPosts) && $relatedPosts->count() > 0)
+    <section class="mt-16 pt-12 border-t border-zinc-100" aria-label="Artículos del blog">
+
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-zinc-900" style="font-family: 'Playfair Display', serif;">
+                    Del Blog
+                </h2>
+                <p class="text-sm text-zinc-400 mt-1">Artículos, técnicas y consejos para cocinar mejor</p>
+            </div>
+            @if(Route::has('blog.index'))
+            <a href="{{ route('blog.index') }}"
+               class="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors group">
+                Ver todos los artículos
+                <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+            </a>
+            @endif
+        </div>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($relatedPosts as $post)
+            <article class="group flex flex-col bg-white rounded-2xl overflow-hidden border border-zinc-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+
+                {{-- Imagen --}}
+                <div class="aspect-video overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200 shrink-0">
+                    @if($post->featured_image)
+                    <img src="{{ $post->featured_image }}"
+                         alt="{{ $post->image_alt ?? $post->title }}"
+                         loading="lazy"
+                         decoding="async"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    @else
+                    <div class="w-full h-full flex items-center justify-center">
+                        <svg class="w-10 h-10 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Contenido --}}
+                <div class="p-5 flex flex-col flex-1">
+
+                    {{-- Categoría del artículo --}}
+                    @if($post->category)
+                    <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-2">
+                        {{ $post->category }}
+                    </span>
+                    @endif
+
+                    {{-- Título --}}
+                    @if(Route::has('blog.show'))
+                    <h3 class="text-base font-bold text-zinc-900 group-hover:text-amber-600 transition-colors line-clamp-2 leading-snug mb-2">
+                        <a href="{{ route('blog.show', $post->slug) }}">{{ $post->title }}</a>
+                    </h3>
+                    @else
+                    <h3 class="text-base font-bold text-zinc-900 line-clamp-2 leading-snug mb-2">
+                        {{ $post->title }}
+                    </h3>
+                    @endif
+
+                    {{-- Extracto --}}
+                    <p class="text-sm text-zinc-500 line-clamp-3 leading-relaxed flex-1">
+                        {{ $post->short_excerpt }}
+                    </p>
+
+                    {{-- Footer: fecha + leer más --}}
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-zinc-100">
+                        @if($post->published_at)
+                        <time class="text-xs text-zinc-400" datetime="{{ $post->published_at->toIso8601String() }}">
+                            {{ $post->published_at->translatedFormat('d M, Y') }}
+                        </time>
+                        @endif
+                        @if(Route::has('blog.show'))
+                        <a href="{{ route('blog.show', $post->slug) }}"
+                           class="text-xs font-semibold text-amber-600 hover:text-amber-700 transition-colors flex items-center gap-1 group/link">
+                            Leer más
+                            <svg class="w-3 h-3 group-hover/link:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                            </svg>
+                        </a>
+                        @endif
+                    </div>
+                </div>
+            </article>
             @endforeach
         </div>
     </section>

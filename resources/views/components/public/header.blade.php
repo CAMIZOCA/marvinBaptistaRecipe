@@ -57,6 +57,11 @@
                     </div>
                 </div>
 
+                <a href="{{ route('blog.index') }}"
+                   class="px-3 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg transition-colors {{ request()->routeIs('blog.*') ? 'text-zinc-900 bg-zinc-50' : '' }}">
+                    Blog
+                </a>
+
                 <a href="{{ route('store.index') }}"
                    class="px-3 py-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 rounded-lg transition-colors {{ request()->routeIs('store.*') ? 'text-zinc-900 bg-zinc-50' : '' }}">
                     Tienda
@@ -119,6 +124,10 @@
             </a>
             @endforeach
             @endif
+            <a href="{{ route('blog.index') }}"
+               class="flex items-center px-3 py-2.5 text-sm font-medium text-zinc-700 hover:text-zinc-900 hover:bg-zinc-50 rounded-xl transition-colors {{ request()->routeIs('blog.*') ? 'bg-zinc-50 text-zinc-900' : '' }}">
+                Blog
+            </a>
             <a href="{{ route('store.index') }}"
                class="flex items-center px-3 py-2.5 text-sm font-medium text-zinc-700 hover:text-zinc-900 hover:bg-zinc-50 rounded-xl transition-colors">
                 Tienda

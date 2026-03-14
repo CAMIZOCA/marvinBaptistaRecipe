@@ -1,63 +1,239 @@
 /**
  * ai-enhance.js — AI Enhancement workflow
- * 1. POST to enhance URL → receive { success, current, suggested }
- * 2. Display each suggested field with accept checkbox + current vs new diff
- * 3. POST accepted fields to save URL as { fields: {...} }
+ * 1. "Verificar conexión" → POST test endpoint → show status dot
+ * 2. "Mejorar con IA" → pre-flight check → POST enhance URL → diff view
+ * 3. Accept checkboxes → POST save URL → reload
  */
 
 document.addEventListener('DOMContentLoaded', function () {
     var enhanceBtn    = document.getElementById('btn-ai-enhance');
+    var checkBtn      = document.getElementById('btn-ai-check');
     var saveBtn       = document.getElementById('btn-ai-save');
     var spinner       = document.getElementById('ai-enhance-spinner');
     var btnText       = document.getElementById('ai-enhance-text');
     var diffContainer = document.getElementById('ai-diff-container');
     var diffFields    = document.getElementById('ai-diff-fields');
+    var statusDot     = document.getElementById('ai-status-dot');
+    var statusText    = document.getElementById('ai-status-text');
+    var errorBox      = document.getElementById('ai-error-box');
+    var errorTitle    = document.getElementById('ai-error-title');
+    var errorDetail   = document.getElementById('ai-error-detail');
+    var errorLink     = document.getElementById('ai-error-link');
 
     if (!enhanceBtn) return;
 
     var pageData   = document.querySelector('[data-enhance-url]');
     var enhanceUrl = enhanceBtn.dataset.enhanceUrl || (pageData && pageData.dataset.enhanceUrl) || '';
     var saveUrl    = (saveBtn && saveBtn.dataset.saveUrl) || (pageData && pageData.dataset.saveUrl) || '';
+    var testUrl    = (checkBtn && checkBtn.dataset.testUrl) || '';
 
     // Store full suggested object for save step
     var _suggested = {};
 
-    /* ─── Enhance button ──────────────────────────────────────── */
-    enhanceBtn.addEventListener('click', function () {
-        if (!enhanceUrl) { alert('URL de mejora no configurada.'); return; }
+    /* ─── Status helpers ──────────────────────────────────────── */
 
-        enhanceBtn.disabled = true;
-        if (spinner)       spinner.classList.remove('hidden');
-        if (btnText)       btnText.textContent = 'Analizando con IA...';
-        if (diffContainer) diffContainer.classList.add('hidden');
+    function setStatus(state, message) {
+        var dotClasses = {
+            idle:     'bg-zinc-500',
+            checking: 'bg-yellow-400 animate-pulse',
+            ok:       'bg-emerald-400',
+            error:    'bg-red-400',
+            warning:  'bg-amber-400',
+        };
+        if (statusDot) {
+            statusDot.className = 'w-2 h-2 rounded-full shrink-0 ' + (dotClasses[state] || dotClasses.idle);
+        }
+        if (statusText) statusText.textContent = message || '';
+    }
+
+    function showError(title, detail, showSettingsLink) {
+        if (!errorBox) return;
+        errorBox.classList.remove('hidden');
+        errorBox.className = 'rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2.5 text-xs space-y-1';
+        if (errorTitle)  { errorTitle.className  = 'font-semibold text-red-300';    errorTitle.textContent  = title  || ''; }
+        if (errorDetail) { errorDetail.className = 'leading-relaxed text-red-200/80'; errorDetail.textContent = detail || ''; }
+        if (errorLink) {
+            if (showSettingsLink) {
+                errorLink.classList.remove('hidden');
+                errorLink.className = 'underline underline-offset-2 font-medium text-red-300 hover:text-red-200';
+            } else {
+                errorLink.classList.add('hidden');
+            }
+        }
+        if (errorBox.scrollIntoView) errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function showInfo(title, detail) {
+        if (!errorBox) return;
+        errorBox.classList.remove('hidden');
+        errorBox.className = 'rounded-lg border border-amber-800/60 bg-amber-950/40 px-3 py-2.5 text-xs space-y-1';
+        if (errorTitle)  { errorTitle.className  = 'font-semibold text-amber-300';    errorTitle.textContent  = title  || ''; }
+        if (errorDetail) { errorDetail.className = 'leading-relaxed text-amber-200/80'; errorDetail.textContent = detail || ''; }
+        if (errorLink) errorLink.classList.add('hidden');
+    }
+
+    function clearError() {
+        if (!errorBox) return;
+        errorBox.classList.add('hidden');
+        if (errorTitle)  errorTitle.textContent  = '';
+        if (errorDetail) errorDetail.textContent = '';
+    }
+
+    /* ─── Connection check ────────────────────────────────────── */
+
+    function checkConnection(silent) {
+        if (!testUrl) {
+            setStatus('warning', 'URL de prueba no configurada');
+            return Promise.resolve(null); // null = unknown / skip
+        }
+
+        setStatus('checking', 'Verificando conexión...');
+        if (!silent) clearError();
 
         var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
 
-        fetch(enhanceUrl, {
+        return fetch(testUrl, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
             body:    JSON.stringify({}),
         })
-        .then(function (res) {
-            if (!res.ok) return res.json().then(function (e) { throw new Error(e.error || e.message || 'Error'); });
-            return res.json();
+        .then(function (res) { return res.json().then(function (d) { return { httpOk: res.ok, data: d }; }); })
+        .then(function (r) {
+            if (r.data.ok) {
+                setStatus('ok', r.data.message || 'Conectado');
+                if (!silent) clearError();
+                return true;
+            } else {
+                setStatus('error', 'Sin conexión con la IA');
+                if (!silent) {
+                    showError(
+                        'No se pudo conectar con la IA',
+                        r.data.message || 'Revisa la configuración de tu proveedor de IA.',
+                        true
+                    );
+                }
+                return false;
+            }
         })
-        .then(function (data) {
-            _suggested = data.suggested || {};
-            renderDiffView(data.suggested || {}, data.current || {});
-        })
-        .catch(function (err) { alert('Error al conectar con la IA: ' + err.message); })
-        .finally(function () {
-            enhanceBtn.disabled = false;
-            if (spinner) spinner.classList.add('hidden');
-            if (btnText) btnText.textContent = 'Mejorar con IA';
+        .catch(function (err) {
+            setStatus('error', 'Error de red');
+            if (!silent) {
+                showError(
+                    'Error de red al verificar la conexión',
+                    err.message || 'Comprueba tu conexión a internet y que el servidor esté activo.',
+                    false
+                );
+            }
+            return false;
+        });
+    }
+
+    if (checkBtn) {
+        checkBtn.addEventListener('click', function () {
+            checkBtn.disabled = true;
+            checkConnection(false).finally(function () { checkBtn.disabled = false; });
+        });
+    }
+
+    /* ─── Enhance button ──────────────────────────────────────── */
+
+    enhanceBtn.addEventListener('click', function () {
+        if (!enhanceUrl) {
+            showError('URL de mejora no configurada', 'Recarga la página e inténtalo de nuevo.', false);
+            return;
+        }
+
+        enhanceBtn.disabled = true;
+        if (spinner)       spinner.classList.remove('hidden');
+        if (btnText)       btnText.textContent = 'Verificando conexión...';
+        if (diffContainer) diffContainer.classList.add('hidden');
+        clearError();
+
+        var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+        // Step 1: pre-flight connection check (silent mode)
+        checkConnection(true).then(function (connected) {
+
+            // connected === null means testUrl not available — proceed anyway
+            if (connected === false) {
+                showError(
+                    'La IA no está disponible',
+                    'Verifica que el proveedor esté configurado correctamente en Ajustes → IA antes de continuar.',
+                    true
+                );
+                resetEnhanceBtn();
+                return;
+            }
+
+            // Step 2: call the enhance endpoint
+            if (btnText) btnText.textContent = 'Analizando con IA...';
+
+            fetch(enhanceUrl, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                body:    JSON.stringify({}),
+            })
+            .then(function (res) {
+                return res.json().then(function (data) { return { status: res.status, ok: res.ok, data: data }; });
+            })
+            .then(function (r) {
+                if (!r.ok) {
+                    var errType = r.data.error_type || 'server';
+                    var hints = {
+                        rate_limit: {
+                            title:  'Límite de solicitudes alcanzado',
+                            detail: r.data.error + (r.data.retry_in ? ' (' + Math.ceil(r.data.retry_in / 60) + ' min restantes)' : ''),
+                            link:   false,
+                        },
+                        config: {
+                            title:  'Error de configuración de la IA',
+                            detail: r.data.error,
+                            link:   true,
+                        },
+                        server: {
+                            title:  'Error en el servidor',
+                            detail: r.data.error || 'Ocurrió un error inesperado. Revisa los logs de Laravel (storage/logs).',
+                            link:   false,
+                        },
+                    };
+                    var h = hints[errType] || hints.server;
+                    setStatus('error', h.title);
+                    showError(h.title, h.detail, h.link);
+                    resetEnhanceBtn();
+                    return;
+                }
+
+                setStatus('ok', 'Análisis completado ✓');
+                _suggested = r.data.suggested || {};
+                renderDiffView(r.data.suggested || {}, r.data.current || {});
+                resetEnhanceBtn();
+            })
+            .catch(function (err) {
+                setStatus('error', 'Error de red');
+                showError(
+                    'Error de red al contactar la IA',
+                    'No se recibió respuesta del servidor. Detalle: ' + err.message,
+                    false
+                );
+                resetEnhanceBtn();
+            });
         });
     });
 
+    function resetEnhanceBtn() {
+        enhanceBtn.disabled = false;
+        if (spinner) spinner.classList.add('hidden');
+        if (btnText) btnText.textContent = 'Mejorar con IA';
+    }
+
     /* ─── Save button ─────────────────────────────────────────── */
+
     if (saveBtn) {
         saveBtn.addEventListener('click', function () {
-            if (!saveUrl) { alert('URL de guardado no configurada.'); return; }
+            if (!saveUrl) {
+                showError('URL de guardado no configurada', 'Recarga la página e inténtalo de nuevo.', false);
+                return;
+            }
 
             var fields = {};
             document.querySelectorAll('.ai-field-accept:checked').forEach(function (cb) {
@@ -66,12 +242,13 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (Object.keys(fields).length === 0) {
-                alert('No has seleccionado ningún campo para guardar.');
+                showInfo('Nada seleccionado', 'Activa al menos un campo con el checkbox "Aceptar" antes de guardar.');
                 return;
             }
 
             saveBtn.disabled    = true;
             saveBtn.textContent = 'Guardando...';
+            clearError();
 
             var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
 
@@ -81,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 body:    JSON.stringify({ fields: fields }),
             })
             .then(function (res) {
-                if (!res.ok) throw new Error('Error al guardar');
+                if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'Error al guardar'); });
                 return res.json();
             })
             .then(function () {
@@ -91,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 setTimeout(function () { window.location.reload(); }, 900);
             })
             .catch(function (err) {
-                alert('Error al guardar: ' + err.message);
+                showError('Error al guardar', err.message, false);
                 saveBtn.disabled    = false;
                 saveBtn.textContent = 'Guardar Cambios Aceptados';
             });
@@ -99,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ─── Render diff view ────────────────────────────────────── */
+
     function renderDiffView(suggested, current) {
         if (!diffFields || !diffContainer) return;
         diffFields.innerHTML = '';
@@ -170,7 +348,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     esc(String(val)) + '</p>';
 
             } else if (cfg.type === 'tips') {
-                // tips_secrets can be string or array
                 var tipsHtml = '<div class="text-xs text-emerald-200 bg-emerald-950/50 border border-emerald-800/40 rounded-lg px-3 py-2 space-y-1 max-h-48 overflow-y-auto">';
                 if (Array.isArray(val)) {
                     val.forEach(function (tip, i) {
@@ -197,8 +374,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             } else if (cfg.type === 'list') {
                 var listHtml = '<ul class="text-xs text-emerald-200 bg-emerald-950/50 border border-emerald-800/40 rounded-lg px-4 py-2 space-y-1 list-disc">';
-                (Array.isArray(val) ? val : [val]).forEach(function (item) {
-                    listHtml += '<li class="leading-relaxed">' + esc(String(item)) + '</li>';
+                (Array.isArray(val) ? val : [val]).forEach(function (listItem) {
+                    listHtml += '<li class="leading-relaxed">' + esc(String(listItem)) + '</li>';
                 });
                 listHtml += '</ul>';
                 sugBlock.innerHTML += listHtml;
@@ -210,8 +387,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         diffContainer.classList.remove('hidden');
-
-        // Scroll into view
         diffContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 

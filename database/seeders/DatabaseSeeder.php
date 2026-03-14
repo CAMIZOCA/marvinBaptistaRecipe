@@ -80,5 +80,8 @@ class DatabaseSeeder extends Seeder
             'affiliate_tag' => 'marvinbaptista-20',
             'default_country' => 'EC',
         ], 'amazon');
+
+        $this->call(PostSeeder::class);
+        $this->call(BlogArticlesSeeder::class);
     }
 }

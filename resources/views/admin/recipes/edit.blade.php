@@ -496,6 +496,28 @@
                         </div>
 
                         @if($isEdit)
+
+                        {{-- AI Connection Status --}}
+                        <div id="ai-status-bar" class="flex items-center gap-2 px-3 py-2 bg-zinc-700/40 rounded-lg text-xs">
+                            <span id="ai-status-dot" class="w-2 h-2 rounded-full bg-zinc-500 shrink-0"></span>
+                            <span id="ai-status-text" class="text-zinc-400">Sin verificar</span>
+                            <button type="button" id="btn-ai-check"
+                                    data-test-url="{{ route('admin.settings.test-ai') }}"
+                                    class="ml-auto text-violet-400 hover:text-violet-300 underline underline-offset-2 transition-colors">
+                                Verificar conexión
+                            </button>
+                        </div>
+
+                        {{-- Inline error / info box --}}
+                        <div id="ai-error-box" class="hidden rounded-lg border px-3 py-2.5 text-xs space-y-1">
+                            <p id="ai-error-title" class="font-semibold"></p>
+                            <p id="ai-error-detail" class="leading-relaxed opacity-90"></p>
+                            <a href="{{ route('admin.settings.index') }}#tab-ai"
+                               id="ai-error-link" class="hidden underline underline-offset-2 font-medium">
+                                Ir a Ajustes → IA
+                            </a>
+                        </div>
+
                         <button type="button" id="btn-ai-enhance"
                                 data-enhance-url="{{ $enhanceUrl }}"
                                 class="w-full inline-flex items-center justify-center gap-3 px-4 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-medium text-sm transition-colors">
