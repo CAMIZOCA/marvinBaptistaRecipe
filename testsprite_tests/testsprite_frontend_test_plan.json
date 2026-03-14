@@ -1,0 +1,1490 @@
+[
+  {
+    "id": "TC001",
+    "title": "Homepage loads and shows hero with featured recipes",
+    "description": "Verifies the homepage renders and displays the hero/featured recipes section.",
+    "category": "Homepage",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Recetas\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured recipes hero section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured recipe card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Homepage shows latest recipes grid",
+    "description": "Verifies the homepage displays a visible latest recipes section with a grid/list of recipes.",
+    "category": "Homepage",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Latest recipes\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Latest recipes grid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Latest recipe card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "Open a featured recipe card from homepage to recipe detail page",
+    "description": "Verifies clicking a featured recipe card navigates to the recipe detail page.",
+    "category": "Homepage",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured recipe card\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first \"Featured recipe\" card"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe content\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Homepage displays quick recipes section",
+    "description": "Verifies the homepage shows a dedicated quick recipes section with at least one visible recipe card.",
+    "category": "Homepage",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Quick recipes\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Quick recipes section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Quick recipe card\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Homepage displays categories section",
+    "description": "Verifies the homepage shows a categories area that is visible to users.",
+    "category": "Homepage",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Categories\" section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Categories section\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Category link\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Homepage shows featured Amazon book widget",
+    "description": "Verifies the homepage displays the random featured Amazon book widget with a visible CTA.",
+    "category": "Homepage",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Featured book\" widget"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Featured Amazon book widget\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Book CTA\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Click featured book CTA navigates to store area",
+    "description": "Verifies clicking the book CTA from the homepage takes the user into the store experience (tienda).",
+    "category": "Homepage",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to \"Featured book\" widget"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Book CTA\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Book CTA\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Book details\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "View first page of recipe listing",
+    "description": "Verifies the /recetas page loads and shows a list of published recipes.",
+    "category": "Recipe Listing",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/recetas\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Recetas\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Pagination\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Filter recipes by category from the listing page",
+    "description": "Verifies selecting a category filter updates the results to that category.",
+    "category": "Recipe Listing",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Category filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first available category option in the category filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active category filter\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Pagination\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Apply time filter (≤30 min) and verify results persist when paging",
+    "description": "Verifies the time filter can be applied and remains active after navigating to the next page.",
+    "category": "Recipe Listing",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Time filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"≤30 min\" from the time filter dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active time filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Next\" in the pagination controls"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active time filter\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Pagination keeps active category filter (using a category page)",
+    "description": "Verifies paging within a specific category keeps the category context while navigating pages.",
+    "category": "Recipe Listing",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first available category option in the category filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active category filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Next\" in the pagination controls"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active category filter\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Sorting option changes ordering of listing",
+    "description": "Verifies changing the sorting option updates the visible ordering of recipes.",
+    "category": "Recipe Listing",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Sort dropdown\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Más recientes\" from the sort dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select \"Más antiguos\" from the sort dropdown"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Filter recipes by difficulty",
+    "description": "Verifies the difficulty filter can be applied and the results refresh accordingly.",
+    "category": "Recipe Listing",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Difficulty filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Select the first available difficulty option from the difficulty filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active difficulty filter\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Pagination\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Filter recipes by tag",
+    "description": "Verifies selecting a tag filter updates the listing results and shows the tag as active.",
+    "category": "Recipe Listing",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Tag filter\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first available tag option in the tag filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Active tag filter\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Pagination\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Unpublished recipes are not visible in the recipe listing",
+    "description": "Verifies the listing does not display unpublished recipes.",
+    "category": "Recipe Listing",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Borrador\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No publicado\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Unpublished\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "Adjust servings updates ingredient amounts (including fractions)",
+    "description": "Verifies that changing the servings control updates ingredient quantities on the page and displays fractional formatting when applicable.",
+    "category": "Recipe Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible recipe card or recipe title link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Servings\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the servings increase control (plus button) once"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Ingredients\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"/\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Step timer starts and shows running state",
+    "description": "Verifies a preparation step timer can be started and the UI indicates it is running.",
+    "category": "Recipe Detail",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible recipe card or recipe title link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Preparation\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Scroll to the first visible step that has a timer control"
+      },
+      {
+        "type": "action",
+        "description": "Click on the step timer start button"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Pause\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Unpublished recipe returns 404 page",
+    "description": "Verifies that navigating to a non-existent/unpublished recipe slug shows a 404 page.",
+    "category": "Recipe Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recetas\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas/slug-que-no-existe-para-prueba-404"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"404\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No encontrado\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "Category hub page shows subcategories and recipe list",
+    "description": "Verifies a category hub page renders with a visible subcategory section and a list of recipes.",
+    "category": "Category & Subcategory Pages",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Recetas\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible category link in the recipes listing page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/recetas/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Breadcrumb\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Subcategories\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Category hub breadcrumb navigation is visible and consistent",
+    "description": "Verifies the category hub page shows a breadcrumb that includes the recipes section and the current category.",
+    "category": "Category & Subcategory Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible category link in the recipes listing page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Breadcrumb\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Recetas\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/recetas/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify page title contains \"Recetas\""
+      }
+    ]
+  },
+  {
+    "id": "TC021",
+    "title": "Subcategory page shows recipe listing and breadcrumb",
+    "description": "Verifies a subcategory page loads from a category hub and shows breadcrumb plus a list of recipes for that subcategory.",
+    "category": "Category & Subcategory Pages",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible category link in the recipes listing page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Subcategories\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible subcategory link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/recetas/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Breadcrumb\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC022",
+    "title": "Category hub to subcategory navigation updates breadcrumb",
+    "description": "Verifies clicking a subcategory from a category hub navigates to a subcategory page and the breadcrumb reflects the deeper level.",
+    "category": "Category & Subcategory Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible category link in the recipes listing page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Breadcrumb\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible subcategory link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Breadcrumb\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Recetas\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/recetas/\""
+      }
+    ]
+  },
+  {
+    "id": "TC023",
+    "title": "Subcategory page allows navigating back to the category hub via breadcrumb",
+    "description": "Verifies the breadcrumb on a subcategory page provides a link back to the category hub and that navigation works.",
+    "category": "Category & Subcategory Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible category link in the recipes listing page"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible subcategory link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Breadcrumb\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the category item in the breadcrumb"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/recetas/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Subcategories\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC024",
+    "title": "Category hub recipes link to a recipe detail page",
+    "description": "Verifies that selecting a recipe from a category hub opens a recipe detail page.",
+    "category": "Category & Subcategory Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible category link in the recipes listing page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible recipe title in the recipe list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe title\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC025",
+    "title": "Subcategory recipes link to a recipe detail page",
+    "description": "Verifies that selecting a recipe from a subcategory listing opens a recipe detail page.",
+    "category": "Category & Subcategory Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible subcategory link"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible recipe title in the subcategory recipe list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\" and recipe title is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible subcategory link"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe list\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible recipe title in the recipe list"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Recipe title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/\""
+      }
+    ]
+  },
+  {
+    "id": "TC026",
+    "title": "Invalid category shows a 404 page",
+    "description": "Verifies that navigating to a non-existent category path results in a visible 404 not found page.",
+    "category": "Category & Subcategory Pages",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/recetas/invalid-category-does-not-exist"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"404\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No encontrado\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC027",
+    "title": "View store listing shows active books in a grid with expected metadata",
+    "description": "Verifies the store listing page displays a grid of books with visible cover, title, and cuisine type for active items.",
+    "category": "Store (Books Listing)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Tienda\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"books grid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a book cover image\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a book title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a cuisine type label\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC028",
+    "title": "Open a book detail page from the store listing by clicking a book card",
+    "description": "Verifies clicking a book card from the listing navigates to the book detail page.",
+    "category": "Store (Books Listing)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a book card\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"a book card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"book detail title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Comprar en Amazon\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC029",
+    "title": "Book detail page contains a visible Amazon purchase call-to-action",
+    "description": "Verifies that the book detail page provides a clear 'Comprar en Amazon' CTA for the user.",
+    "category": "Store (Books Listing)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a book card\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"a book card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Comprar en Amazon\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"book cover image\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"book title\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC030",
+    "title": "Ensure inactive books are not shown on the store listing (no obvious 'inactive' items)",
+    "description": "Verifies the store listing does not display books marked or labeled as inactive/unavailable.",
+    "category": "Store (Books Listing)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"books grid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"inactivo\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"no disponible\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"inactive\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC031",
+    "title": "Store listing handles empty state gracefully when no books are available",
+    "description": "Verifies the store listing shows a user-friendly message if the grid has no items to display.",
+    "category": "Store (Books Listing)",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"books grid\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a book card\" is not visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"No hay libros\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC032",
+    "title": "Book detail page does not show the Amazon CTA when purchase is not available",
+    "description": "Verifies the book detail page does not render the purchase button if the book cannot be purchased (edge case).",
+    "category": "Store (Books Listing)",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"a book card\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"a book card\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"book detail title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Comprar en Amazon\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC033",
+    "title": "Open store listing and verify a book detail page is reachable",
+    "description": "Verifies a user can access the store listing and reach a book detail page that shows core book information and a buy button.",
+    "category": "Book Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Tienda\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible book item in the store listing"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a book title is visible on the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an element \"Comprar\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC034",
+    "title": "Book detail page shows description content",
+    "description": "Verifies the book detail page displays descriptive content (not just a title) along with the buy button.",
+    "category": "Book Detail",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "action",
+        "description": "Click on the first visible book item in the store listing"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a book title is visible on the page"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a book description section is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an element \"Comprar\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC035",
+    "title": "Invalid book detail page is not directly testable due to dynamic route",
+    "description": "Covers the intended 404 behavior for an invalid book slug; skipped because only dynamic routes exist for book details and the plan cannot navigate to an unlisted concrete URL.",
+    "category": "Book Detail",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/tienda"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/tienda\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Tienda\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC036",
+    "title": "Open a static page and see content rendered",
+    "description": "Verifies that a static CMS page loads and shows its main content.",
+    "category": "Static Pages",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Main navigation\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Privacidad\" in the footer links"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/pagina/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Page title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Page content\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC037",
+    "title": "Static page privacy meta title is present (visible title)",
+    "description": "Verifies that the privacy page displays its expected title text on the page.",
+    "category": "Static Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Privacidad\" in the footer links"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/pagina/privacidad\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Page title\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Privacidad\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC038",
+    "title": "Navigate to Cookies page from Privacy page (internal static navigation)",
+    "description": "Verifies users can move between static pages using in-page or footer links without errors.",
+    "category": "Static Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Privacidad\" in the footer links"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/pagina/privacidad\""
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Cookies\" in the footer links"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/pagina/\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Cookies\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC039",
+    "title": "Static page displays a non-empty body (basic content sanity)",
+    "description": "Verifies that the page is not blank and shows readable content blocks.",
+    "category": "Static Pages",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Privacidad\" in the footer links"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Page content\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"At least one paragraph of text\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC040",
+    "title": "Non-existent/unpublished static page shows not found experience",
+    "description": "Verifies that an unpublished or missing static page does not render normal page content.",
+    "category": "Static Pages",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/pagina/esta-pagina-no-existe-xyz"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"404\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Page content\" is not visible"
+      }
+    ]
+  },
+  {
+    "id": "TC041",
+    "title": "Static page is reachable from homepage footer",
+    "description": "Verifies that the homepage exposes a visible link to at least one static page (discoverability).",
+    "category": "Static Pages",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Footer\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify element \"Privacidad\" is visible"
+      },
+      {
+        "type": "action",
+        "description": "Click on \"Privacidad\" in the footer links"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/pagina/privacidad\""
+      }
+    ]
+  },
+  {
+    "id": "TC042",
+    "title": "Sitemap endpoint returns XML content for indexing",
+    "description": "Verifies that /sitemap.xml loads successfully and displays XML content intended for search engines.",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/sitemap.xml"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/sitemap.xml\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<?xml\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<urlset\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<url>\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<loc>\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC043",
+    "title": "Sitemap includes the homepage URL entry",
+    "description": "Verifies that the sitemap contains a location entry for the site homepage.",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/sitemap.xml"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<loc>\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"/\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"</loc>\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC044",
+    "title": "Sitemap includes main listing pages for recetas and tienda",
+    "description": "Verifies that /sitemap.xml contains discoverable URLs for key static listing pages.",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/sitemap.xml"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"/recetas\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"/tienda\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<loc>\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC045",
+    "title": "Robots endpoint returns expected crawl rules",
+    "description": "Verifies that /robots.txt loads and contains core rules including disallowing the admin area.",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/robots.txt"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify URL contains \"/robots.txt\""
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"User-agent\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Disallow: /admin\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Sitemap:\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC046",
+    "title": "Robots.txt references the sitemap location",
+    "description": "Verifies that robots.txt includes a Sitemap directive referencing the sitemap endpoint.",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/robots.txt"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"Sitemap:\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"/sitemap.xml\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC047",
+    "title": "Sitemap remains valid XML even when recipe entries are minimal",
+    "description": "Verifies that /sitemap.xml still renders a valid XML structure even when content entries are limited (e.g., no published recipes).",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/sitemap.xml"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<?xml\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<urlset\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"</urlset\" is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<loc>\" is visible"
+      }
+    ]
+  },
+  {
+    "id": "TC048",
+    "title": "Sitemap and robots endpoints do not render an HTML page",
+    "description": "Verifies these SEO utility endpoints are plain-text style outputs (not typical HTML pages).",
+    "category": "SEO Utilities (Sitemap & Robots)",
+    "priority": "Low",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/sitemap.xml"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<html\" is not visible"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to http://marvinbaptista.test/robots.txt"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify text \"<html\" is not visible"
+      }
+    ]
+  }
+]

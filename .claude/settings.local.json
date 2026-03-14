@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer require:*)",
+      "Bash(/d/laragon/bin/php/php8.4.4nts/php.exe /c/ProgramData/ComposerSetup/bin/composer.phar require spatie/laravel-sluggable spatie/laravel-sitemap intervention/image league/csv guzzlehttp/guzzle --no-interaction)",
+      "Bash(PHP=/d/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe)",
+      "Bash($PHP /c/ProgramData/ComposerSetup/bin/composer.phar require spatie/laravel-sluggable spatie/laravel-sitemap intervention/image league/csv guzzlehttp/guzzle --no-interaction)",
+      "Bash(ls /d/laragon/bin/php/php-8.3.30-Win32-vs16-x64/*.exe)",
+      "Bash(/d/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe /c/ProgramData/ComposerSetup/bin/composer.phar require spatie/laravel-sluggable spatie/laravel-sitemap \"intervention/image:^3.0\" \"league/csv:^9.0\" guzzlehttp/guzzle --no-interaction)",
+      "Bash(npm install:*)",
+      "Bash(find /d/laragon/www/marvinbaptista/resources/views -name *.blade.php -newer /d/laragon/www/marvinbaptista/resources/views/admin/layouts/app.blade.php)",
+      "Bash($PHP artisan:*)",
+      "Bash(\"/d/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" artisan:*)",
+      "Bash(npm run:*)",
+      "Read(//d/laragon/etc/apache2/sites-enabled//**)",
+      "Read(//d/laragon/etc/apache2/sites-enabled/**)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(\"/d/laragon/bin/php/php-8.3.30-Win32-vs16-x64/php.exe\" artisan tinker --execute=\":*)"
+    ]
+  }
+}

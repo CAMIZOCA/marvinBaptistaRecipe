@@ -1,0 +1,117 @@
+version: "2"
+type: backend
+tech_stack:
+  - language: PHP
+  - framework: Laravel
+  - template_engine: Blade
+  - other: Vite, PHPUnit
+routes:
+  - path: /sitemap.xml
+    file: routes/web.php
+    auth_required: false
+    description: Sitemap XML generator
+  - path: /robots.txt
+    file: routes/web.php
+    auth_required: false
+    description: Robots.txt generator
+  - path: /
+    file: routes/web.php
+    auth_required: false
+    description: Homepage with featured recipes
+  - path: /recetas
+    file: routes/web.php
+    auth_required: false
+    description: Recipe listing
+  - path: /recetas/{category}
+    file: routes/web.php
+    auth_required: false
+    description: Recipes by category
+  - path: /recetas/{category}/{subcategory}
+    file: routes/web.php
+    auth_required: false
+    description: Recipes by subcategory
+  - path: /ingrediente/{ingredient}
+    file: routes/web.php
+    auth_required: false
+    description: Ingredient index pages
+  - path: /tienda
+    file: routes/web.php
+    auth_required: false
+    description: Store listing (Amazon books)
+  - path: /tienda/{book}
+    file: routes/web.php
+    auth_required: false
+    description: Book detail page
+  - path: /pagina/{page}
+    file: routes/web.php
+    auth_required: false
+    description: Static content pages
+  - path: /{slug}
+    file: routes/web.php
+    auth_required: false
+    description: Recipe detail (catch-all by slug)
+features:
+  - name: Ver receta
+    description: Mostrar una receta individual con ingredientes y pasos
+    files:
+      - app/Http/Controllers/RecipeController.php
+      - app/Models/Recipe.php
+      - resources/views/recipes/show.blade.php
+    entry_route: /{slug}
+    user_interactions:
+      - Navegar a la URL de la receta
+      - Ver lista de ingredientes
+      - Ver pasos de preparación
+      - Ver meta (tiempo, porciones)
+    api_calls: []
+    auth_required: false
+  - name: Listado de recetas y categorías
+    description: Navegar y filtrar recetas por categoría y subcategoría
+    files:
+      - app/Http/Controllers/RecipeListController.php
+      - app/Http/Controllers/CategoryController.php
+      - app/Http/Controllers/SubcategoryController.php
+      - resources/views/recipes/index.blade.php
+    entry_route: /recetas
+    user_interactions:
+      - Abrir la página de recetas
+      - Hacer clic en una categoría o subcategoría
+      - Paginar resultados
+    api_calls: []
+    auth_required: false
+  - name: Índice por ingrediente
+    description: Buscar recetas relacionadas con un ingrediente
+    files:
+      - app/Http/Controllers/IngredientController.php
+      - resources/views/ingredients/show.blade.php
+    entry_route: /ingrediente/{ingredient}
+    user_interactions:
+      - Abrir página de ingrediente
+      - Ver recetas listadas por ingrediente
+    api_calls: []
+    auth_required: false
+  - name: Tienda (libros)
+    description: Listado y detalle de libros (Amazon)
+    files:
+      - app/Http/Controllers/StoreController.php
+      - app/Models/AmazonBook.php
+      - resources/views/store/index.blade.php
+      - resources/views/store/show.blade.php
+    entry_route: /tienda
+    user_interactions:
+      - Abrir página de tienda
+      - Abrir detalle de libro
+    api_calls: []
+    auth_required: false
+  - name: Páginas estáticas
+    description: Renderizar páginas CMS-like
+    files:
+      - app/Http/Controllers/PageController.php
+      - app/Models/Page.php
+      - resources/views/pages/show.blade.php
+    entry_route: /pagina/{page}
+    user_interactions:
+      - Abrir página estática
+    api_calls: []
+    auth_required: false
+known_limitations: []
