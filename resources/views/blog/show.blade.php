@@ -9,13 +9,44 @@
 <meta property="og:description" content="{{ $post->seo_description ?? $post->short_excerpt }}">
 <meta property="og:url" content="{{ route('blog.show', $post->slug) }}">
 @if($post->featured_image)
-<meta property="og:image" content="{{ $post->featured_image }}">
+<meta property="og:image" content="{{ Str::startsWith($post->featured_image, 'http') ? $post->featured_image : asset($post->featured_image) }}">
+<meta property="og:image:alt" content="{{ $post->image_alt ?? $post->title }}">
 @endif
 <meta property="og:site_name" content="Marvin Baptista">
 @if($post->published_at)
 <meta property="article:published_time" content="{{ $post->published_at->toIso8601String() }}">
 @endif
 <meta name="twitter:card" content="summary_large_image">
+{{-- Article Schema.org --}}
+<script type="application/ld+json">
+{
+    "@@context": "https://schema.org",
+    "@@type": "Article",
+    "headline": "{{ addslashes($post->seo_title ?? $post->title) }}",
+    "description": "{{ addslashes($post->seo_description ?? $post->short_excerpt) }}",
+    "image": "{{ $post->featured_image ?? '' }}",
+    "author": {
+        "@@type": "Person",
+        "name": "Marvin Baptista",
+        "url": "{{ route('page.show', 'sobre-mi') }}"
+    },
+    "publisher": {
+        "@@type": "Organization",
+        "name": "Marvin Baptista",
+        "logo": {
+            "@@type": "ImageObject",
+            "url": "{{ asset('favicon.ico') }}"
+        }
+    },
+    "datePublished": "{{ $post->published_at?->toIso8601String() ?? $post->created_at->toIso8601String() }}",
+    "dateModified": "{{ $post->updated_at->toIso8601String() }}",
+    "mainEntityOfPage": {
+        "@@type": "WebPage",
+        "@@id": "{{ route('blog.show', $post->slug) }}"
+    },
+    "url": "{{ route('blog.show', $post->slug) }}"
+}
+</script>
 @endsection
 
 @section('content')

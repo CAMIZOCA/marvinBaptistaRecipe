@@ -68,7 +68,7 @@
         ];
     }
     if ($recipe->ingredients->count()) {
-        $recipeSchema['recipeIngredient'] = $recipe->ingredients->take(30)->map(
+        $recipeSchema['recipeIngredient'] = $recipe->ingredients->map(
             fn($i) => trim("{$i->amount} {$i->unit} {$i->ingredient_name}")
         )->values()->toArray();
     }

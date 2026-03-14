@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Recipe;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class CategoryController extends Controller
@@ -17,12 +18,17 @@ class CategoryController extends Controller
             return view('categories.hub', compact('category', 'children'));
         }
 
-        $recipes = $category->recipes()
-            ->published()
-            ->with('categories')
-            ->latest('published_at')
-            ->paginate(12)
-            ->withQueryString();
+        $page = request()->get('page', 1);
+        $cacheKey = "category:{$category->slug}:page:{$page}";
+
+        $recipes = Cache::remember($cacheKey, 3600, function () use ($category) {
+            return $category->recipes()
+                ->published()
+                ->with('categories')
+                ->latest('published_at')
+                ->paginate(12)
+                ->withQueryString();
+        });
 
         $seo = [
             'title' => ($category->seo_title ?? $category->name) . ' - ' . config('app.name'),

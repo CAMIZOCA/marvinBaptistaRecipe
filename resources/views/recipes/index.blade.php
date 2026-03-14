@@ -4,6 +4,14 @@
 <title>Recetas | Marvin Baptista</title>
 <meta name="description" content="Todas las recetas de cocina latinoamericana y mediterránea. Filtra por dificultad, país de origen y más.">
 <link rel="canonical" href="{{ route('recipes.index') }}">
+@if(isset($recipes))
+@if(!$recipes->onFirstPage())
+<link rel="prev" href="{{ $recipes->previousPageUrl() }}">
+@endif
+@if($recipes->hasMorePages())
+<link rel="next" href="{{ $recipes->nextPageUrl() }}">
+@endif
+@endif
 <meta property="og:title" content="Todas las Recetas | Marvin Baptista">
 <meta property="og:url" content="{{ route('recipes.index') }}">
 @endsection

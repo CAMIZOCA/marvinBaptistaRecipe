@@ -6,8 +6,9 @@
 <link rel="canonical" href="{{ route('category.show', $category->slug) }}">
 <meta property="og:title" content="{{ $category->name }} | Marvin Baptista">
 <meta property="og:url" content="{{ route('category.show', $category->slug) }}">
-@if($category->image)
-<meta property="og:image" content="{{ $category->image }}">
+@if(isset($category) && $category->image)
+<meta property="og:image" content="{{ Str::startsWith($category->image, 'http') ? $category->image : asset($category->image) }}">
+<meta property="og:image:alt" content="{{ $category->name }}">
 @endif
 @endsection
 

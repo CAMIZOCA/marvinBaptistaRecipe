@@ -4,6 +4,12 @@
 <title>Blog de Cocina — Técnicas, Historia y Consejos | Marvin Baptista</title>
 <meta name="description" content="Artículos sobre técnicas culinarias, historia de la gastronomía latinoamericana y mediterránea, ingredientes y consejos de chef para cocinar mejor.">
 <link rel="canonical" href="{{ route('blog.index') }}">
+@if(!$posts->onFirstPage())
+<link rel="prev" href="{{ $posts->previousPageUrl() }}">
+@endif
+@if($posts->hasMorePages())
+<link rel="next" href="{{ $posts->nextPageUrl() }}">
+@endif
 <meta property="og:type" content="website">
 <meta property="og:title" content="Blog de Cocina | Marvin Baptista">
 <meta property="og:url" content="{{ route('blog.index') }}">

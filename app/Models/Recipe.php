@@ -24,7 +24,6 @@ class Recipe extends Model
         'featured_image', 'image_alt', 'video_url',
         'story', 'tips_secrets',
         'seo_title', 'seo_description', 'seo_keywords',
-        'schema_rating_value', 'schema_rating_count',
         'published_at', 'is_published', 'view_count', 'ai_enhanced_at',
         'user_id',
     ];

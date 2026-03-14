@@ -78,7 +78,7 @@ class BlogPostController extends Controller
             'title'           => ['required', 'string', 'max:255'],
             'excerpt'         => ['nullable', 'string'],
             'content'         => ['nullable', 'string'],
-            'featured_image'  => ['nullable', 'string', 'max:500'],
+            'featured_image'  => ['nullable', 'url', 'max:500'],
             'image_alt'       => ['nullable', 'string', 'max:255'],
             'category'        => ['nullable', 'string', 'max:100'],
             'seo_title'       => ['nullable', 'string', 'max:255'],

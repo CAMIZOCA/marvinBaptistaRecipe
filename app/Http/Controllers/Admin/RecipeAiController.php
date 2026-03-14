@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EnhanceRecipeBatchJob;
 use App\Models\Recipe;
 use App\Models\Setting;
 use App\Services\RecipeEnhancer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class RecipeAiController extends Controller
 {
@@ -184,5 +187,61 @@ class RecipeAiController extends Controller
             report($e);
             return response()->json(['error' => 'Error al guardar las mejoras.'], 500);
         }
+    }
+
+    /**
+     * Inicia mejora IA en lote para múltiples recetas.
+     */
+    public function enhanceBatch(Request $request): JsonResponse
+    {
+        $request->validate([
+            'ids'   => ['required', 'array', 'min:1', 'max:50'],
+            'ids.*' => ['integer', 'exists:recipes,id'],
+        ]);
+
+        $ids      = $request->ids;
+        $batchId  = Str::uuid()->toString();
+        $cacheKey = "ai_batch:{$batchId}";
+        $total    = count($ids);
+
+        // Inicializar caché de progreso
+        Cache::put($cacheKey, [
+            'processed' => 0,
+            'errors'    => [],
+            'log'       => [],
+            'total'     => $total,
+            'done'      => false,
+        ], 1800);
+
+        // Despachar un job por receta
+        foreach ($ids as $recipeId) {
+            EnhanceRecipeBatchJob::dispatch($recipeId, $cacheKey, $total)
+                ->onQueue('ai');
+        }
+
+        return response()->json([
+            'batch_id' => $batchId,
+            'total'    => $total,
+            'message'  => "Lote iniciado: {$total} receta(s) en cola.",
+        ]);
+    }
+
+    /**
+     * Retorna el progreso actual de un lote IA.
+     */
+    public function batchProgress(string $batchId): JsonResponse
+    {
+        // Validar formato UUID para evitar cache key injection
+        if (!preg_match('/^[0-9a-f\-]{36}$/i', $batchId)) {
+            return response()->json(['error' => 'ID de lote inválido'], 400);
+        }
+
+        $progress = Cache::get("ai_batch:{$batchId}");
+
+        if (!$progress) {
+            return response()->json(['error' => 'Lote no encontrado o expirado'], 404);
+        }
+
+        return response()->json($progress);
     }
 }

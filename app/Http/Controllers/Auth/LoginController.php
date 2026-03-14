@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class LoginController extends Controller
@@ -31,6 +33,16 @@ class LoginController extends Controller
 
         $remember = $request->boolean('remember');
 
+        // Rate limiting: 5 intentos por IP+email por minuto
+        $rateLimitKey = 'login:' . Str::lower($request->input('email')) . '|' . $request->ip();
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
+            return back()->withErrors([
+                'email' => "Demasiados intentos de acceso. Intenta de nuevo en {$seconds} segundos.",
+            ])->withInput($request->only('email'));
+        }
+        RateLimiter::hit($rateLimitKey, 60);
+
         if (Auth::attempt($credentials, $remember)) {
             $user = Auth::user();
 
@@ -48,6 +60,7 @@ class LoginController extends Controller
                 ])->onlyInput('email');
             }
 
+            RateLimiter::clear($rateLimitKey);
             $request->session()->regenerate();
             return redirect()->intended(route('admin.dashboard'));
         }

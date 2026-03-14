@@ -39,6 +39,10 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::delete('/{recipe}', [RecipeController::class, 'destroy'])->name('destroy');
         Route::post('/{recipe}/toggle-published', [RecipeController::class, 'togglePublished'])->name('toggle-published');
 
+        // AI Batch (must be before /{recipe} routes to avoid conflicts)
+        Route::post('/mejorar-ia/lote', [RecipeAiController::class, 'enhanceBatch'])->name('ai.batch');
+        Route::get('/mejorar-ia/lote/{batchId}/progreso', [RecipeAiController::class, 'batchProgress'])->name('ai.batch-progress');
+
         // AI Enhancement
         Route::post('/{recipe}/mejorar-ia', [RecipeAiController::class, 'enhance'])->name('ai.enhance');
         Route::post('/{recipe}/mejorar-ia/guardar', [RecipeAiController::class, 'saveEnhancement'])->name('ai.save');

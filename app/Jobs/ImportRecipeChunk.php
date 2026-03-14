@@ -85,29 +85,52 @@ class ImportRecipeChunk implements ShouldQueue
     private function importNewFormat(array $row): void
     {
         DB::transaction(function () use ($row) {
-            $title = trim($row['titulo'] ?? 'Sin título');
+            $title       = trim($row['titulo'] ?? 'Sin título');
+            $pais        = trim($row['pais'] ?? '');
+            $dificultad  = trim($row['dificultad'] ?? '');
+            $preparacion = trim($row['preparacion'] ?? '');
+            $ingredientes = trim($row['ingredientes'] ?? '');
 
             if (Recipe::where('title', $title)->exists()) return;
 
+            // --- Extract times from preparation text (CSV values are placeholders) ---
+            [$prepTime, $cookTime] = $this->extractTimesFromText($preparacion);
+
+            // --- Auto-generate description and subtitle ---
+            $description = $this->generateDescription($title, $preparacion, $pais, $dificultad);
+            $subtitle    = $this->generateSubtitle($pais, $dificultad, $this->parseInt($row['porciones'] ?? 0));
+
             $recipe = Recipe::create([
                 'title'             => $title,
-                'origin_country'    => trim($row['pais'] ?? ''),
-                'difficulty'        => $this->mapDifficulty($row['dificultad'] ?? ''),
-                'prep_time_minutes' => $this->parseInt($row['tiempo_preparacion'] ?? 0),
-                'cook_time_minutes' => $this->parseInt($row['tiempo_coccion'] ?? 0),
+                'subtitle'          => $subtitle,
+                'description'       => $description,
+                'origin_country'    => $pais,
+                'difficulty'        => $this->mapDifficulty($dificultad),
+                'prep_time_minutes' => $prepTime,
+                'cook_time_minutes' => $cookTime,
                 'servings'          => $this->parseInt($row['porciones'] ?? 0) ?: null,
                 'is_published'      => false,
                 'user_id'           => $this->userId,
             ]);
 
-            // Ingredients (multiline free text)
-            if (!empty($row['ingredientes'])) {
-                $this->parseAndSaveIngredients($recipe, $row['ingredientes']);
+            // --- Auto-assign category from pais ---
+            if ($pais) {
+                $catSlug = \Illuminate\Support\Str::slug($pais);
+                $cat = \App\Models\Category::firstOrCreate(
+                    ['slug' => $catSlug],
+                    ['name' => $pais, 'sort_order' => 99]
+                );
+                $recipe->categories()->attach($cat->id, ['is_primary' => true]);
+            }
+
+            // Ingredients (multiline free text) — pass title to skip header lines
+            if ($ingredientes) {
+                $this->parseAndSaveIngredients($recipe, $ingredientes, $title);
             }
 
             // Steps (numbered list)
-            if (!empty($row['preparacion'])) {
-                $this->parseAndSaveSteps($recipe, $row['preparacion']);
+            if ($preparacion) {
+                $this->parseAndSaveSteps($recipe, $preparacion);
             }
 
             // Featured image from Google Drive
@@ -211,18 +234,38 @@ class ImportRecipeChunk implements ShouldQueue
      *  "1 litro de Aguardiente seco"  → {amount:1,  unit:"litro", name:"Aguardiente seco"}
      *  "½ litro de Agua"              → {amount:0.5,unit:"litro", name:"Agua"}
      * ══════════════════════════════════════════════════════════ */
-    private function parseAndSaveIngredients(Recipe $recipe, string $raw): void
+    private function parseAndSaveIngredients(Recipe $recipe, string $raw, string $recipeTitle = ''): void
     {
-        $lines = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $raw))));
-        $pos   = 0;
+        $lines          = array_filter(array_map('trim', explode("\n", str_replace("\r", '', $raw))));
+        $titleNormalized = mb_strtolower(trim($recipeTitle));
+        $pos            = 0;
+
         foreach ($lines as $line) {
             if (!$line) continue;
+
+            // Skip lines that repeat the recipe title (CSV header artifact)
+            if ($titleNormalized && mb_strtolower(trim($line)) === $titleNormalized) continue;
+
+            // Skip lines that look like section headers (no digits, no known units, all-caps or title-case and >3 words)
+            if (!preg_match('/\d/', $line)) {
+                $words = preg_split('/\s+/', trim($line));
+                $hasUnit = false;
+                foreach ($words as $w) {
+                    if (in_array(mb_strtolower($w), self::UNITS)) { $hasUnit = true; break; }
+                }
+                if (!$hasUnit && count($words) >= 3 && !preg_match('/\bde\b|\bcon\b|\by\b/i', $line)) {
+                    continue; // looks like a title/header line
+                }
+            }
+
             [$amount, $unit, $name] = $this->parseIngredientLine($line);
+            if (!$name) continue;
+
             RecipeIngredient::create([
                 'recipe_id'       => $recipe->id,
                 'order_position'  => ++$pos,
                 'amount'          => $amount,
-                'unit'            => $unit,
+                'unit'            => $unit ? mb_strtolower($unit) : null,
                 'ingredient_name' => $name,
             ]);
         }
@@ -234,15 +277,24 @@ class ImportRecipeChunk implements ShouldQueue
         $line = strtr($line, ['½' => '0.5', '¼' => '0.25', '¾' => '0.75', '⅓' => '0.33', '⅔' => '0.67', '⅛' => '0.125']);
 
         $tokens = preg_split('/\s+/', trim($line), -1, PREG_SPLIT_NO_EMPTY);
-        if (empty($tokens)) return [null, null, $line];
+        if (empty($tokens)) return [null, null, ''];
 
         $amount = null;
         $offset = 0;
 
-        // First token = amount?
-        if (preg_match('/^[\d]+([\.,]\d+)?(\/\d+)?$/', $tokens[0])) {
+        // First token: integer, decimal, or written fraction (e.g. 1/4)
+        if (preg_match('/^(\d+)\/(\d+)$/', $tokens[0], $fm)) {
+            // Written fraction: 1/4 → 0.25
+            $amount = $fm[2] > 0 ? round((float)$fm[1] / (float)$fm[2], 4) : null;
+            $offset = 1;
+        } elseif (preg_match('/^[\d]+([\.,]\d+)?$/', $tokens[0])) {
             $amount = (float) str_replace(',', '.', $tokens[0]);
             $offset = 1;
+            // Handle compound numbers: "1 0.5" from "1 ½" (vulgar fraction after integer)
+            if (isset($tokens[1]) && preg_match('/^0\.\d+$/', $tokens[1])) {
+                $amount += (float) $tokens[1];
+                $offset  = 2;
+            }
         }
 
         // Next token = unit?
@@ -251,7 +303,7 @@ class ImportRecipeChunk implements ShouldQueue
         if (isset($tokens[$offset])) {
             $candidate = mb_strtolower($tokens[$offset]);
             if (in_array($candidate, self::UNITS)) {
-                $unit      = $tokens[$offset];
+                $unit      = $candidate; // store lowercase unit
                 $nameStart = $offset + 1;
                 // Skip "de" connector
                 if (isset($tokens[$nameStart]) && mb_strtolower($tokens[$nameStart]) === 'de') {
@@ -260,7 +312,7 @@ class ImportRecipeChunk implements ShouldQueue
             }
         }
 
-        $name = implode(' ', array_slice($tokens, $nameStart)) ?: $line;
+        $name = implode(' ', array_slice($tokens, $nameStart)) ?: '';
 
         return [$amount, $unit, $name];
     }
@@ -301,6 +353,24 @@ class ImportRecipeChunk implements ShouldQueue
      * ══════════════════════════════════════════════════════════ */
     private function downloadImage(string $url, string $slug): ?string
     {
+        // Anti-SSRF: validar URL y bloquear hosts privados/internos
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return null;
+        }
+        $parsed = parse_url($url);
+        if (empty($parsed['host']) || !in_array($parsed['scheme'] ?? '', ['http', 'https'])) {
+            return null;
+        }
+        $host = strtolower($parsed['host']);
+        foreach (['localhost', '127.', '0.0.0.0', '::1', '169.254', 'metadata.'] as $blocked) {
+            if (str_contains($host, $blocked)) return null;
+        }
+        $ip = gethostbyname($host);
+        if ($ip !== $host && filter_var($ip, FILTER_VALIDATE_IP) &&
+            !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            return null;
+        }
+
         try {
             $response = Http::timeout(30)
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; RecipeImporter/1.0)'])
@@ -397,6 +467,97 @@ class ImportRecipeChunk implements ShouldQueue
                 'cuisine_type'  => 'Internacional',
             ]
         );
+    }
+
+    /* ══════════════════════════════════════════════════════════
+     *  DESCRIPTION & SUBTITLE GENERATORS
+     * ══════════════════════════════════════════════════════════ */
+
+    /**
+     * Builds a 2-3 sentence description from the preparation text.
+     * Strips step numbers and takes the first meaningful sentences.
+     */
+    private function generateDescription(string $title, string $preparacion, string $pais, string $dificultad): string
+    {
+        $diffLabel = match (mb_strtolower(trim($dificultad))) {
+            'fácil', 'facil', 'easy'     => 'fácil',
+            'difícil', 'dificil', 'hard' => 'difícil',
+            default                      => 'media',
+        };
+
+        // First sentence from preparacion (remove step number prefix)
+        $firstSentence = '';
+        if ($preparacion) {
+            $lines = preg_split('/\r?\n/', $preparacion);
+            foreach ($lines as $line) {
+                $clean = preg_replace('/^\d+[\.\)]\s+/', '', trim($line));
+                if (strlen($clean) > 20) {
+                    // Take only the first sentence (up to first period/!)
+                    $sentences = preg_split('/(?<=[.!?])\s+/', $clean, 2);
+                    $firstSentence = trim($sentences[0]);
+                    break;
+                }
+            }
+        }
+
+        $intro = "Aprende a preparar {$title}, una deliciosa receta de dificultad {$diffLabel}"
+               . ($pais ? " con sabores de {$pais}." : '.');
+
+        return $firstSentence ? $intro . ' ' . $firstSentence : $intro;
+    }
+
+    /**
+     * Generates a short subtitle for display under the recipe title.
+     */
+    private function generateSubtitle(string $pais, string $dificultad, int $porciones): string
+    {
+        $diffLabel = match (mb_strtolower(trim($dificultad))) {
+            'fácil', 'facil', 'easy'     => 'Fácil',
+            'difícil', 'dificil', 'hard' => 'Difícil',
+            default                      => 'Media',
+        };
+
+        $parts = [];
+        if ($pais)      $parts[] = $pais;
+        if ($diffLabel) $parts[] = $diffLabel;
+        if ($porciones) $parts[] = "{$porciones} porciones";
+
+        return implode(' · ', $parts);
+    }
+
+    /**
+     * Scans the preparation text for time references ("20 minutos", "2 horas")
+     * and returns [$prepMinutes, $cookMinutes].
+     */
+    private function extractTimesFromText(string $text): array
+    {
+        if (!$text) return [15, 0];
+
+        // Match patterns like "20 minutos", "2 horas", "1 hora y media", "30 min"
+        preg_match_all(
+            '/(\d+(?:[,\.]\d+)?)\s*(hora[s]?|h\b|minuto[s]?|min\b)/iu',
+            $text,
+            $matches,
+            PREG_SET_ORDER
+        );
+
+        $totalMinutes = 0;
+        foreach ($matches as $m) {
+            $value = (float) str_replace(',', '.', $m[1]);
+            $unit  = mb_strtolower($m[2]);
+            $totalMinutes += (str_starts_with($unit, 'h') ? $value * 60 : $value);
+        }
+
+        // Classify: short totals → prep time only; longer → split
+        $total = (int) min($totalMinutes, 600); // cap at 10h
+
+        if ($total <= 30) {
+            return [10, $total > 0 ? $total : 20];
+        }
+        if ($total <= 90) {
+            return [15, $total - 15];
+        }
+        return [20, $total - 20];
     }
 
     /* ══════════════════════════════════════════════════════════

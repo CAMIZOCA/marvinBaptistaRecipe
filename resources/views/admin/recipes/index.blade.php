@@ -95,6 +95,12 @@
         @endif
     </form>
 
+    {{-- AI Batch config (data URLs for JS) --}}
+    <div id="ai-batch-config"
+         data-ai-batch-url="{{ route('admin.recipes.ai.batch') }}"
+         data-ai-batch-progress-url="{{ url('/admin/recetas/mejorar-ia/lote/__BATCH_ID__/progreso') }}">
+    </div>
+
     {{-- ===================== BULK ACTIONS ===================== --}}
     @if(isset($recipes) && $recipes->count() > 0)
     <div>
@@ -128,6 +134,13 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
                     Eliminar
+                </button>
+                <button type="button" id="ai-batch-btn"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347A3.75 3.75 0 0113.5 21h-3a3.75 3.75 0 01-2.651-1.098l-.347-.347z"/>
+                    </svg>
+                    Mejorar con IA
                 </button>
                 <button type="button" onclick="clearSelection()"
                         class="px-3 py-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg text-sm transition-colors"
@@ -326,6 +339,26 @@
     </div>
     @endif
 
+</div>
+
+{{-- Panel de progreso IA en lote --}}
+<div id="ai-batch-panel" class="hidden mt-6 bg-zinc-800 border border-zinc-700 rounded-2xl p-5">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+            <svg class="w-4 h-4 text-indigo-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347A3.75 3.75 0 0113.5 21h-3a3.75 3.75 0 01-2.651-1.098l-.347-.347z"/>
+            </svg>
+            Mejora IA en lote
+        </h3>
+        <span class="text-xs text-zinc-500">
+            <span id="ai-batch-processed">0</span> / <span id="ai-batch-total">0</span> recetas
+        </span>
+    </div>
+    <div class="w-full bg-zinc-700 rounded-full h-2 mb-3">
+        <div id="ai-batch-bar" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+    </div>
+    <p id="ai-batch-status" class="text-xs text-zinc-400 mb-2">Esperando...</p>
+    <p id="ai-batch-log" class="text-xs text-zinc-500 font-mono"></p>
 </div>
 
 @push('scripts')
