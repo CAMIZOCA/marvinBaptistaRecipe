@@ -41,6 +41,11 @@ class SettingController extends Controller
 
         'anthropic_api_key'       => 'ai',
         'anthropic_model'         => 'ai',
+
+        'ai_provider'             => 'ai',   // 'anthropic' | 'local'
+        'local_ai_url'            => 'ai',
+        'local_ai_model'          => 'ai',
+        'local_ai_api_key'        => 'ai',
     ];
 
     public function index(): View
@@ -62,8 +67,8 @@ class SettingController extends Controller
                 continue;
             }
 
-            // For API key: skip if blank (don't overwrite with empty)
-            if ($key === 'anthropic_api_key' && blank($value)) {
+            // Don't overwrite secret keys with empty value
+            if (in_array($key, ['anthropic_api_key', 'local_ai_api_key']) && blank($value)) {
                 continue;
             }
 

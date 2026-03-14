@@ -56,11 +56,20 @@ class RecipeAiController extends Controller
 
     public function testApiKey(): JsonResponse
     {
+        $provider = Setting::get('ai_provider', 'anthropic');
+
+        return $provider === 'local'
+            ? $this->testLocalAi()
+            : $this->testAnthropic();
+    }
+
+    private function testAnthropic(): JsonResponse
+    {
         $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.key');
         $model  = Setting::get('anthropic_model')   ?: config('ai.anthropic.model', 'claude-haiku-3-5');
 
         if (blank($apiKey)) {
-            return response()->json(['ok' => false, 'message' => 'No hay clave API configurada. Guarda la clave primero.'], 422);
+            return response()->json(['ok' => false, 'message' => 'No hay clave API de Anthropic configurada. Guarda la clave primero.'], 422);
         }
 
         try {
@@ -78,10 +87,7 @@ class RecipeAiController extends Controller
 
             if ($response->successful()) {
                 $modelUsed = $response->json('model', $model);
-                return response()->json([
-                    'ok'      => true,
-                    'message' => "Conexión exitosa. Modelo: {$modelUsed}",
-                ]);
+                return response()->json(['ok' => true, 'message' => "Conexión exitosa con Anthropic. Modelo: {$modelUsed}"]);
             }
 
             $status = $response->status();
@@ -96,6 +102,50 @@ class RecipeAiController extends Controller
             return response()->json(['ok' => false, 'message' => $hint], 422);
         } catch (\Exception $e) {
             return response()->json(['ok' => false, 'message' => 'No se pudo conectar con Anthropic: ' . $e->getMessage()], 500);
+        }
+    }
+
+    private function testLocalAi(): JsonResponse
+    {
+        $baseUrl = rtrim(Setting::get('local_ai_url', ''), '/');
+        $model   = Setting::get('local_ai_model', 'llama3.2');
+        $key     = Setting::get('local_ai_api_key', 'local');
+
+        if (blank($baseUrl)) {
+            return response()->json(['ok' => false, 'message' => 'No hay URL de IA local configurada.'], 422);
+        }
+
+        $endpoint = str_ends_with($baseUrl, '/chat/completions')
+            ? $baseUrl
+            : rtrim($baseUrl, '/') . '/v1/chat/completions';
+
+        try {
+            $response = Http::withHeaders([
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . ($key ?: 'local'),
+            ])
+            ->timeout(20)
+            ->post($endpoint, [
+                'model'      => $model,
+                'stream'     => false,
+                'max_tokens' => 5,
+                'messages'   => [['role' => 'user', 'content' => 'Reply with "ok"']],
+            ]);
+
+            if ($response->successful()) {
+                $modelUsed = $response->json('model', $model);
+                return response()->json(['ok' => true, 'message' => "Conexión exitosa con IA local. Modelo: {$modelUsed}"]);
+            }
+
+            return response()->json([
+                'ok'      => false,
+                'message' => "Error {$response->status()}: {$response->body()}",
+            ], 422);
+        } catch (\Exception $e) {
+            $msg = str_contains($e->getMessage(), 'Connection refused')
+                ? "No se pudo conectar a {$baseUrl}. ¿Está corriendo Ollama / LM Studio?"
+                : 'Error: ' . $e->getMessage();
+            return response()->json(['ok' => false, 'message' => $msg], 500);
         }
     }
 

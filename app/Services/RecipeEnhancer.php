@@ -13,42 +13,14 @@ class RecipeEnhancer
     {
         $recipe->load('ingredients', 'steps', 'categories', 'tags');
 
-        $prompt = $this->buildUserPrompt($recipe);
+        $prompt   = $this->buildUserPrompt($recipe);
+        $provider = Setting::get('ai_provider', 'anthropic');
 
-        $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.key');
-        $model  = Setting::get('anthropic_model')   ?: config('ai.anthropic.model');
+        $content = $provider === 'local'
+            ? $this->callLocalAi($prompt)
+            : $this->callAnthropic($prompt);
 
-        if (blank($apiKey)) {
-            throw new \RuntimeException(
-                'No hay clave API de IA configurada. Ve a Ajustes → IA y agrega tu clave de Anthropic.'
-            );
-        }
-
-        $response = Http::withHeaders([
-            'x-api-key'         => $apiKey,
-            'anthropic-version' => config('ai.anthropic.version', '2023-06-01'),
-            'content-type'      => 'application/json',
-        ])
-        ->timeout(config('ai.anthropic.timeout', 90))
-        ->post(config('ai.anthropic.api_url'), [
-            'model' => $model,
-            'max_tokens' => config('ai.anthropic.max_tokens', 4096),
-            'system' => config('ai.system_prompt'),
-            'messages' => [
-                ['role' => 'user', 'content' => $prompt],
-            ],
-        ]);
-
-        if (!$response->successful()) {
-            throw new \RuntimeException(
-                'Error al conectar con la API de IA: ' . $response->status() . ' - ' . $response->body()
-            );
-        }
-
-        $data = $response->json();
-        $content = $data['content'][0]['text'] ?? '';
-
-        // Extract JSON from response (Claude may wrap in markdown code blocks)
+        // Extract JSON if wrapped in markdown code blocks
         if (preg_match('/```(?:json)?\s*([\s\S]*?)```/', $content, $matches)) {
             $content = $matches[1];
         }
@@ -61,6 +33,90 @@ class RecipeEnhancer
 
         return $this->validateAndClean($result);
     }
+
+    /* ─── Anthropic (Claude) ──────────────────────────────────────── */
+
+    private function callAnthropic(string $prompt): string
+    {
+        $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.key');
+        $model  = Setting::get('anthropic_model')   ?: config('ai.anthropic.model');
+
+        if (blank($apiKey)) {
+            throw new \RuntimeException(
+                'No hay clave API de Anthropic configurada. Ve a Ajustes → IA y agrega tu clave.'
+            );
+        }
+
+        $response = Http::withHeaders([
+            'x-api-key'         => $apiKey,
+            'anthropic-version' => config('ai.anthropic.version', '2023-06-01'),
+            'content-type'      => 'application/json',
+        ])
+        ->timeout(config('ai.anthropic.timeout', 90))
+        ->post(config('ai.anthropic.api_url', 'https://api.anthropic.com/v1/messages'), [
+            'model'      => $model,
+            'max_tokens' => config('ai.anthropic.max_tokens', 4096),
+            'system'     => config('ai.system_prompt'),
+            'messages'   => [['role' => 'user', 'content' => $prompt]],
+        ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException(
+                'Error Anthropic ' . $response->status() . ': ' . ($response->json('error.message') ?? $response->body())
+            );
+        }
+
+        return $response->json('content.0.text', '');
+    }
+
+    /* ─── Local AI (OpenAI-compatible: Ollama, LM Studio, Jan…) ───── */
+
+    private function callLocalAi(string $prompt): string
+    {
+        $url   = rtrim(Setting::get('local_ai_url', 'http://localhost:11434'), '/');
+        $model = Setting::get('local_ai_model', 'llama3.2');
+        $key   = Setting::get('local_ai_api_key', 'local');  // many servers accept any string
+
+        if (blank($url)) {
+            throw new \RuntimeException(
+                'No hay URL de IA local configurada. Ve a Ajustes → IA.'
+            );
+        }
+
+        // Ensure endpoint ends with /v1/chat/completions (OpenAI-compatible)
+        if (!str_ends_with($url, '/chat/completions')) {
+            $url = rtrim($url, '/') . '/v1/chat/completions';
+        }
+
+        $systemPrompt = config('ai.system_prompt',
+            'Eres un experto consultor de SEO para blogs de cocina. Responde siempre en español con JSON válido.'
+        );
+
+        $response = Http::withHeaders([
+            'Content-Type'  => 'application/json',
+            'Authorization' => 'Bearer ' . ($key ?: 'local'),
+        ])
+        ->timeout(120)
+        ->post($url, [
+            'model'    => $model,
+            'stream'   => false,
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user',   'content' => $prompt],
+            ],
+        ]);
+
+        if (!$response->successful()) {
+            throw new \RuntimeException(
+                'Error IA local ' . $response->status() . ': ' . $response->body()
+            );
+        }
+
+        // OpenAI-compatible response
+        return $response->json('choices.0.message.content', '');
+    }
+
+    /* ─── Apply enhancements ──────────────────────────────────────── */
 
     public function applyEnhancement(Recipe $recipe, array $fields): void
     {
@@ -81,8 +137,8 @@ class RecipeEnhancer
             $recipe->faqs()->delete();
             foreach ($fields['faq'] as $i => $faqItem) {
                 $recipe->faqs()->create([
-                    'question' => $faqItem['question'] ?? '',
-                    'answer' => $faqItem['answer'] ?? '',
+                    'question'   => $faqItem['question'] ?? '',
+                    'answer'     => $faqItem['answer'] ?? '',
                     'sort_order' => $i + 1,
                 ]);
             }
@@ -113,7 +169,6 @@ class RecipeEnhancer
             }
         }
 
-        // Sync without detaching manually matched ones
         $existingPivot = $recipe->books()->pluck('recipe_books.relevance_type', 'amazon_books.id');
         foreach ($existingPivot as $bookId => $relevanceType) {
             if ($relevanceType !== 'ai_matched') {
@@ -129,7 +184,7 @@ class RecipeEnhancer
         $ingredients = $recipe->ingredients->map(function ($ing) {
             $parts = [];
             if ($ing->amount) $parts[] = $ing->amount;
-            if ($ing->unit) $parts[] = $ing->unit;
+            if ($ing->unit)   $parts[] = $ing->unit;
             $parts[] = $ing->ingredient_name;
             return implode(' ', $parts);
         })->implode(', ');
@@ -161,12 +216,12 @@ class RecipeEnhancer
     private function validateAndClean(array $data): array
     {
         return [
-            'seo_title' => isset($data['seo_title']) ? substr(trim($data['seo_title']), 0, 60) : null,
-            'seo_description' => isset($data['seo_description']) ? substr(trim($data['seo_description']), 0, 160) : null,
-            'story' => $data['story'] ?? null,
-            'tips_secrets' => $data['tips_secrets'] ?? null,
-            'faq' => array_slice($data['faq'] ?? [], 0, 6),
-            'amazon_keywords' => array_slice($data['amazon_keywords'] ?? [], 0, 5),
+            'seo_title'                 => isset($data['seo_title'])        ? substr(trim($data['seo_title']), 0, 60)        : null,
+            'seo_description'           => isset($data['seo_description'])  ? substr(trim($data['seo_description']), 0, 160) : null,
+            'story'                     => $data['story']                   ?? null,
+            'tips_secrets'              => $data['tips_secrets']            ?? null,
+            'faq'                       => array_slice($data['faq']                      ?? [], 0, 6),
+            'amazon_keywords'           => array_slice($data['amazon_keywords']          ?? [], 0, 5),
             'internal_link_suggestions' => array_slice($data['internal_link_suggestions'] ?? [], 0, 3),
         ];
     }

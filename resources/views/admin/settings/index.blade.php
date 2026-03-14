@@ -194,42 +194,57 @@
             {{-- ==================== IA ==================== --}}
             <div id="settings-panel-ia" class="settings-panel hidden space-y-5">
 
-                <div class="p-4 bg-violet-900/20 border border-violet-700/40 rounded-xl">
-                    <div class="flex items-start gap-3">
-                        <div class="w-8 h-8 bg-violet-600/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                            <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-violet-300 mb-1">Mejora con Inteligencia Artificial</p>
-                            <p class="text-xs text-violet-400/80">
-                                Usa la API de Anthropic (Claude) para mejorar el SEO, agregar historia cultural y generar FAQs automáticamente para cada receta.
-                                Obtén tu clave gratuita en
-                                <a href="https://console.anthropic.com/" target="_blank" class="underline hover:text-violet-200">console.anthropic.com</a>.
-                            </p>
-                        </div>
+                {{-- Provider selector --}}
+                @php $currentProvider = $settings['ai_provider'] ?? 'anthropic'; @endphp
+                <div>
+                    <p class="text-sm font-medium text-zinc-300 mb-3">Proveedor de IA</p>
+                    <div class="grid md:grid-cols-2 gap-3">
+
+                        <label class="ai-provider-card cursor-pointer" data-provider="anthropic">
+                            <input type="radio" name="settings[ai_provider]" value="anthropic"
+                                   {{ $currentProvider === 'anthropic' ? 'checked' : '' }} class="sr-only">
+                            <div class="p-4 rounded-xl border-2 transition-all
+                                {{ $currentProvider === 'anthropic' ? 'border-violet-500 bg-violet-900/20' : 'border-zinc-700 bg-zinc-700/30 hover:border-zinc-500' }}">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-7 h-7 bg-orange-500/20 rounded-lg flex items-center justify-center text-orange-400 text-xs font-bold">A</div>
+                                    <span class="font-medium text-zinc-200 text-sm">Anthropic (Claude)</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">API en la nube. Máxima calidad, requiere clave de pago. Ideal para producción.</p>
+                            </div>
+                        </label>
+
+                        <label class="ai-provider-card cursor-pointer" data-provider="local">
+                            <input type="radio" name="settings[ai_provider]" value="local"
+                                   {{ $currentProvider === 'local' ? 'checked' : '' }} class="sr-only">
+                            <div class="p-4 rounded-xl border-2 transition-all
+                                {{ $currentProvider === 'local' ? 'border-violet-500 bg-violet-900/20' : 'border-zinc-700 bg-zinc-700/30 hover:border-zinc-500' }}">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-7 h-7 bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400 text-xs font-bold">⌘</div>
+                                    <span class="font-medium text-zinc-200 text-sm">IA Local (localhost)</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">Ollama, LM Studio, Jan u otro servidor OpenAI-compatible. Gratis y privado.</p>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
-                <div class="space-y-4">
-                    {{-- API Key --}}
+                {{-- ── Anthropic section ── --}}
+                <div id="ai-section-anthropic" class="{{ $currentProvider !== 'anthropic' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
+                    <p class="text-xs font-semibold text-orange-400 uppercase tracking-wider">Configuración Anthropic</p>
+
                     <div>
                         <label class="block text-sm font-medium text-zinc-300 mb-1.5">
-                            Clave API de Anthropic
+                            Clave API
                             @if($settings['anthropic_api_key'] ?? null)
-                                <span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-900/40 border border-emerald-700/50 text-emerald-400 rounded-full text-xs font-normal">
-                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                                    Configurada
-                                </span>
+                            <span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-900/40 border border-emerald-700/50 text-emerald-400 rounded-full text-xs font-normal">
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                Configurada
+                            </span>
                             @endif
                         </label>
                         <div class="relative">
-                            <input type="password"
-                                   name="settings[anthropic_api_key]"
-                                   id="anthropic_api_key"
-                                   value=""
-                                   placeholder="{{ $settings['anthropic_api_key'] ? 'sk-ant-••••••••••••••••••••' : 'sk-ant-api03-...' }}"
+                            <input type="password" name="settings[anthropic_api_key]" id="anthropic_api_key" value=""
+                                   placeholder="{{ $settings['anthropic_api_key'] ? 'sk-ant-••••••••••••••' : 'sk-ant-api03-...' }}"
                                    autocomplete="new-password"
                                    class="w-full px-4 py-2.5 pr-12 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                             <button type="button" id="toggle-key-visibility"
@@ -243,12 +258,14 @@
                                 </svg>
                             </button>
                         </div>
-                        <p class="mt-1 text-xs text-zinc-500">Deja en blanco para mantener la clave actual. La clave nunca se muestra una vez guardada.</p>
+                        <p class="mt-1 text-xs text-zinc-500">
+                            Deja vacío para conservar la clave actual. Consigue la tuya en
+                            <a href="https://console.anthropic.com/" target="_blank" class="text-violet-400 hover:underline">console.anthropic.com</a>
+                        </p>
                     </div>
 
-                    {{-- Model --}}
                     <div>
-                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo de Claude</label>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo</label>
                         <select name="settings[anthropic_model]"
                                 class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm">
                             @foreach([
@@ -264,37 +281,81 @@
                             @endforeach
                         </select>
                     </div>
+                </div>
 
-                    {{-- Test Connection --}}
-                    <div class="pt-2">
-                        <button type="button" id="test-ai-btn"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
-                            <svg id="test-ai-spinner" class="w-4 h-4 hidden animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                            </svg>
-                            <svg id="test-ai-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                            Probar conexión
-                        </button>
+                {{-- ── Local AI section ── --}}
+                <div id="ai-section-local" class="{{ $currentProvider !== 'local' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
+                    <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Configuración IA Local</p>
 
-                        <div id="test-ai-result" class="mt-3 hidden p-3 rounded-xl text-sm font-medium"></div>
+                    <div class="p-3 bg-zinc-900/50 rounded-xl border border-zinc-700 text-xs text-zinc-400 space-y-1">
+                        <p class="font-medium text-zinc-300">URLs de ejemplo según servidor:</p>
+                        <p><span class="text-emerald-400 font-mono">Ollama</span> → <code class="bg-zinc-800 px-1 rounded">http://localhost:11434</code></p>
+                        <p><span class="text-blue-400 font-mono">LM Studio</span> → <code class="bg-zinc-800 px-1 rounded">http://localhost:1234</code></p>
+                        <p><span class="text-amber-400 font-mono">Jan</span> → <code class="bg-zinc-800 px-1 rounded">http://localhost:1337</code></p>
+                        <p class="text-zinc-500 pt-1">El endpoint <code class="bg-zinc-800 px-1 rounded">/v1/chat/completions</code> se agrega automáticamente.</p>
                     </div>
 
-                    {{-- Info cards --}}
-                    <div class="grid md:grid-cols-3 gap-3 pt-2">
-                        @foreach([
-                            ['label' => 'SEO Automático',   'desc' => 'Genera títulos y descripciones SEO optimizados para cada receta'],
-                            ['label' => 'Historia Cultural','desc' => 'Agrega el origen e historia de la receta para mejorar la retención'],
-                            ['label' => 'FAQs + Tips',      'desc' => 'Crea preguntas frecuentes y secretos de chef para tráfico long-tail'],
-                        ] as $card)
-                        <div class="p-3 bg-zinc-700/30 border border-zinc-700 rounded-xl">
-                            <p class="text-xs font-semibold text-violet-400 mb-1">{{ $card['label'] }}</p>
-                            <p class="text-xs text-zinc-500">{{ $card['desc'] }}</p>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">URL del servidor local</label>
+                            <input type="url" name="settings[local_ai_url]"
+                                   value="{{ old('settings.local_ai_url', $settings['local_ai_url'] ?? 'http://localhost:11434') }}"
+                                   placeholder="http://localhost:11434"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         </div>
-                        @endforeach
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Nombre del modelo</label>
+                            <input type="text" name="settings[local_ai_model]"
+                                   value="{{ old('settings.local_ai_model', $settings['local_ai_model'] ?? '') }}"
+                                   placeholder="llama3.2 / mistral / phi4"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <p class="mt-1 text-xs text-zinc-500">Tal como aparece en <code class="bg-zinc-800 px-1 rounded">ollama list</code></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">
+                                API Key local
+                                <span class="text-zinc-500 font-normal">(opcional)</span>
+                            </label>
+                            <input type="text" name="settings[local_ai_api_key]"
+                                   value="{{ old('settings.local_ai_api_key', $settings['local_ai_api_key'] ?? '') }}"
+                                   placeholder="local (o deja vacío)"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <p class="mt-1 text-xs text-zinc-500">La mayoría de servidores locales no requieren clave.</p>
+                        </div>
                     </div>
+                </div>
+
+                {{-- Test Connection --}}
+                <div class="flex items-center gap-4 pt-1">
+                    <button type="button" id="test-ai-btn"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+                        <svg id="test-ai-spinner" class="w-4 h-4 hidden animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                        </svg>
+                        <svg id="test-ai-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Probar conexión
+                    </button>
+                    <p class="text-xs text-zinc-500">Guarda primero, luego prueba la conexión.</p>
+                </div>
+                <div id="test-ai-result" class="hidden p-3 rounded-xl text-sm font-medium"></div>
+
+                {{-- Feature summary --}}
+                <div class="grid md:grid-cols-3 gap-3 pt-1">
+                    @foreach([
+                        ['label' => 'SEO Automático',    'desc' => 'Títulos y meta descriptions optimizados por receta'],
+                        ['label' => 'Historia Cultural', 'desc' => 'Origen e historia de la receta para mayor retención'],
+                        ['label' => 'FAQs + Tips',       'desc' => 'Preguntas frecuentes y secretos de chef para long-tail'],
+                    ] as $card)
+                    <div class="p-3 bg-zinc-700/30 border border-zinc-700 rounded-xl">
+                        <p class="text-xs font-semibold text-violet-400 mb-1">{{ $card['label'] }}</p>
+                        <p class="text-xs text-zinc-500">{{ $card['desc'] }}</p>
+                    </div>
+                    @endforeach
                 </div>
             </div>
 
@@ -339,6 +400,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var stored = sessionStorage.getItem(activeKey) || 'general';
     activateTab(stored);
+
+    // ── Provider toggle (Anthropic / Local) ───────────────────────
+    var providerCards    = document.querySelectorAll('.ai-provider-card');
+    var sectionAnthropic = document.getElementById('ai-section-anthropic');
+    var sectionLocal     = document.getElementById('ai-section-local');
+
+    function switchProvider(provider) {
+        providerCards.forEach(function (card) {
+            var isActive = card.dataset.provider === provider;
+            var inner    = card.querySelector('div');
+            inner.classList.toggle('border-violet-500', isActive);
+            inner.classList.toggle('bg-violet-900/20',  isActive);
+            inner.classList.toggle('border-zinc-700',   !isActive);
+            inner.classList.toggle('bg-zinc-700/30',    !isActive);
+        });
+        if (sectionAnthropic) sectionAnthropic.classList.toggle('hidden', provider !== 'anthropic');
+        if (sectionLocal)     sectionLocal.classList.toggle('hidden',     provider !== 'local');
+    }
+
+    providerCards.forEach(function (card) {
+        card.addEventListener('click', function () {
+            var radio = card.querySelector('input[type="radio"]');
+            if (radio) { radio.checked = true; switchProvider(card.dataset.provider); }
+        });
+    });
 
     // ── Show/hide API key ──────────────────────────────────────────
     var toggleBtn = document.getElementById('toggle-key-visibility');
