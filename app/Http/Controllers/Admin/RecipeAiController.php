@@ -54,12 +54,13 @@ class RecipeAiController extends Controller
         }
     }
 
-    public function testApiKey(): JsonResponse
+    public function testApiKey(Request $request): JsonResponse
     {
-        $provider = Setting::get('ai_provider', 'anthropic');
+        // Use provider from request (current UI selection) or fall back to saved DB value
+        $provider = $request->input('provider', Setting::get('ai_provider', 'anthropic'));
 
         return $provider === 'local'
-            ? $this->testLocalAi()
+            ? $this->testLocalAi($request)
             : $this->testAnthropic();
     }
 
@@ -105,11 +106,12 @@ class RecipeAiController extends Controller
         }
     }
 
-    private function testLocalAi(): JsonResponse
+    private function testLocalAi(Request $request): JsonResponse
     {
-        $baseUrl = rtrim(Setting::get('local_ai_url', ''), '/');
-        $model   = Setting::get('local_ai_model', 'llama3.2');
-        $key     = Setting::get('local_ai_api_key', 'local');
+        // Prefer values sent from the UI form (not yet saved) over DB values
+        $baseUrl = rtrim($request->input('local_ai_url', Setting::get('local_ai_url', '')), '/');
+        $model   = $request->input('local_ai_model', Setting::get('local_ai_model', 'llama3.2'));
+        $key     = $request->input('local_ai_api_key', Setting::get('local_ai_api_key', 'local'));
 
         if (blank($baseUrl)) {
             return response()->json(['ok' => false, 'message' => 'No hay URL de IA local configurada.'], 422);

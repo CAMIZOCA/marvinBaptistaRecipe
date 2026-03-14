@@ -453,6 +453,18 @@ document.addEventListener('DOMContentLoaded', function () {
             testIcon.classList.add('hidden');
             testResult.classList.add('hidden');
 
+            // Read current UI state (before saving)
+            var selectedProvider = (document.querySelector('input[name="settings[ai_provider]"]:checked') || {}).value || 'anthropic';
+            var payload = { provider: selectedProvider };
+            if (selectedProvider === 'local') {
+                var urlEl   = document.querySelector('input[name="settings[local_ai_url]"]');
+                var modelEl = document.querySelector('input[name="settings[local_ai_model]"]');
+                var keyEl   = document.querySelector('input[name="settings[local_ai_api_key]"]');
+                if (urlEl)   payload.local_ai_url       = urlEl.value;
+                if (modelEl) payload.local_ai_model     = modelEl.value;
+                if (keyEl)   payload.local_ai_api_key   = keyEl.value;
+            }
+
             fetch('{{ route('admin.settings.test-ai') }}', {
                 method: 'POST',
                 headers: {
@@ -460,6 +472,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 },
+                body: JSON.stringify(payload),
             })
             .then(function (res) { return res.json(); })
             .then(function (data) {
