@@ -58,6 +58,13 @@
             </a>
         </h3>
 
+        {{-- Description excerpt --}}
+        @if($recipe->subtitle ?? $recipe->description ?? null)
+        <p class="text-xs text-zinc-500 line-clamp-2 leading-relaxed mb-3 -mt-1">
+            {{ $recipe->subtitle ? $recipe->subtitle : Str::limit(strip_tags($recipe->description ?? ''), 90) }}
+        </p>
+        @endif
+
         {{-- Meta --}}
         <div class="flex items-center gap-4 text-xs text-zinc-500">
             @php

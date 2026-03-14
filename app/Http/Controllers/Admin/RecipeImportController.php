@@ -4,14 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ImportRecipeChunk;
-use Illuminate\Bus\Batch;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\View\View;
 use League\Csv\Reader;
-use Throwable;
 
 class RecipeImportController extends Controller
 {
@@ -20,7 +17,7 @@ class RecipeImportController extends Controller
         return view('admin.tools.import');
     }
 
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
@@ -35,14 +32,20 @@ class RecipeImportController extends Controller
         $csv->setHeaderOffset(0);
 
         $records = collect(iterator_to_array($csv->getRecords()));
-        $chunks = $records->chunk(50);
+
+        // Detect if new format has image downloads — use chunk size 5 to avoid timeouts
+        $firstRow  = $records->first();
+        $isNewFormat = $firstRow && array_key_exists('titulo', $firstRow);
+        $chunkSize = $isNewFormat ? 5 : 50;
+
+        $chunks = $records->chunk($chunkSize);
 
         $jobs = $chunks->map(fn ($chunk) =>
             new ImportRecipeChunk($chunk->values()->toArray(), auth()->id())
         )->toArray();
 
         if (empty($jobs)) {
-            return back()->with('error', 'El archivo CSV está vacío.');
+            return response()->json(['error' => 'El archivo CSV está vacío o no tiene filas de datos.'], 422);
         }
 
         $batch = Bus::batch($jobs)

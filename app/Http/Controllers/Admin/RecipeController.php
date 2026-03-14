@@ -116,10 +116,46 @@ class RecipeController extends Controller
     public function destroy(Recipe $recipe): RedirectResponse
     {
         $recipe->delete();
-        Cache::tags(['recipes'])->flush();
 
         return redirect()->route('admin.recipes.index')
             ->with('success', 'Receta eliminada.');
+    }
+
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'action' => 'required|in:delete,publish,unpublish',
+            'ids'    => 'required|array|min:1',
+            'ids.*'  => 'integer',
+        ]);
+
+        $ids    = $request->input('ids');
+        $action = $request->input('action');
+        $count  = count($ids);
+
+        switch ($action) {
+            case 'delete':
+                Recipe::whereIn('id', $ids)->delete();
+                $message = "{$count} receta(s) eliminada(s) correctamente.";
+                break;
+
+            case 'publish':
+                // Set published_at only on those that haven't been published before
+                Recipe::whereIn('id', $ids)->whereNull('published_at')
+                    ->update(['published_at' => now()]);
+                Recipe::whereIn('id', $ids)->update(['is_published' => true]);
+                $message = "{$count} receta(s) publicada(s).";
+                break;
+
+            case 'unpublish':
+                Recipe::whereIn('id', $ids)->update(['is_published' => false]);
+                $message = "{$count} receta(s) despublicada(s).";
+                break;
+        }
+
+        // Preserve active filters when redirecting back
+        return redirect()->route('admin.recipes.index', $request->only(['search', 'status', 'category_id', 'difficulty']))
+            ->with('success', $message ?? 'Operación completada.');
     }
 
     public function togglePublished(Recipe $recipe): \Illuminate\Http\JsonResponse

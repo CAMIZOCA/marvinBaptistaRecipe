@@ -1,5 +1,15 @@
 @extends('layouts.app')
 
+@php
+    // Variables disponibles en todas las secciones del template
+    $prepMin        = $recipe->prep_time_minutes ?? 0;
+    $cookMin        = $recipe->cook_time_minutes ?? 0;
+    $totalTime      = $prepMin + $cookMin;
+    $ingredientsList = $recipe->ingredients;
+    $stepsList       = $recipe->steps;
+    $faqList         = $recipe->faqs;
+@endphp
+
 @section('seo_head')
 <title>{{ $recipe->seo_title ?? $recipe->title }} | Marvin Baptista</title>
 <meta name="description" content="{{ $recipe->seo_description ?? Str::limit(strip_tags($recipe->description ?? ''), 160) }}">
@@ -29,9 +39,7 @@
 
 @section('schema_org')
 @php
-    $prepMin  = $recipe->prep_time_minutes ?? 0;
-    $cookMin  = $recipe->cook_time_minutes ?? 0;
-    $totalMin = $prepMin + $cookMin;
+    $totalMin = $totalTime; // ya definido arriba
 
     $recipeSchema = [
         '@context'    => 'https://schema.org',
@@ -47,7 +55,7 @@
     ];
     if ($recipe->featured_image)  $recipeSchema['image']       = $recipe->featured_image;
     if ($prepMin > 0)             $recipeSchema['prepTime']    = "PT{$prepMin}M";
-    if ($cookMin > 0)             $recipeSchema['cookTime']    = "PT{$cookMin}M";
+    if ($cookMin > 0)             $recipeSchema['cookTime']    = "PT{$cookMin}M";  // phpcs:ignore
     if ($totalMin > 0)            $recipeSchema['totalTime']   = "PT{$totalMin}M";
     if ($recipe->servings)        $recipeSchema['recipeYield'] = $recipe->servings . ' porciones';
     if ($recipe->schema_rating_value) {
@@ -298,9 +306,9 @@
                 </div>
 
                 <div class="space-y-6">
-                    @if(is_array($recipe->ingredients) && count($recipe->ingredients) > 0)
+                    @if($recipe->ingredients->count() > 0)
                     @php
-                        $groups = collect($recipe->ingredients)->groupBy('group');
+                        $groups = $recipe->ingredients->groupBy('ingredient_group');
                     @endphp
                     @foreach($groups as $groupName => $ingredients)
                     @if($groupName && $groups->count() > 1)
@@ -315,20 +323,20 @@
                                 <label class="flex items-center gap-3 cursor-pointer w-full">
                                     <input type="checkbox"
                                            class="ingredient-checkbox w-5 h-5 rounded border-zinc-300 text-amber-500 focus:ring-amber-400 shrink-0"
-                                           aria-label="Marcar {{ $ingredient['name'] ?? '' }}">
+                                           aria-label="Marcar {{ $ingredient->ingredient_name }}">
                                     <div class="flex items-baseline gap-2 flex-1">
-                                        @if(isset($ingredient['amount']) && $ingredient['amount'])
+                                        @if($ingredient->amount)
                                         <span class="ingredient-amount font-semibold text-zinc-900 shrink-0"
-                                              data-base-amount="{{ $ingredient['amount'] }}">
-                                            {{ $ingredient['amount'] }}
+                                              data-base-amount="{{ $ingredient->amount }}">
+                                            {{ $ingredient->amount }}
                                         </span>
                                         @endif
-                                        @if(isset($ingredient['unit']) && $ingredient['unit'])
-                                        <span class="text-zinc-600 shrink-0">{{ $ingredient['unit'] }}</span>
+                                        @if($ingredient->unit)
+                                        <span class="text-zinc-600 shrink-0">{{ $ingredient->unit }}</span>
                                         @endif
-                                        <span class="text-zinc-800">{{ $ingredient['name'] ?? '' }}</span>
-                                        @if(isset($ingredient['notes']) && $ingredient['notes'])
-                                        <span class="text-sm text-zinc-400 italic">({{ $ingredient['notes'] }})</span>
+                                        <span class="text-zinc-800">{{ $ingredient->ingredient_name }}</span>
+                                        @if($ingredient->notes)
+                                        <span class="text-sm text-zinc-400 italic">({{ $ingredient->notes }})</span>
                                         @endif
                                     </div>
                                 </label>
@@ -349,29 +357,29 @@
                     Preparación
                 </h2>
                 <ol class="space-y-6">
-                    @if(is_array($recipe->steps) && count($recipe->steps) > 0)
-                    @foreach($recipe->steps as $index => $step)
+                    @if($recipe->steps->count() > 0)
+                    @foreach($recipe->steps as $step)
                     <li class="flex gap-5">
                         <div class="shrink-0 w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm mt-1">
-                            {{ $index + 1 }}
+                            {{ $step->step_number }}
                         </div>
                         <div class="flex-1 space-y-3">
-                            @if(isset($step['title']) && $step['title'])
-                            <h3 class="font-bold text-zinc-900 text-lg">{{ $step['title'] }}</h3>
+                            @if($step->title)
+                            <h3 class="font-bold text-zinc-900 text-lg">{{ $step->title }}</h3>
                             @endif
                             <div class="prose prose-zinc max-w-none leading-relaxed">
-                                {!! $step['description'] ?? '' !!}
+                                {!! $step->description ?? '' !!}
                             </div>
-                            @if(isset($step['duration_minutes']) && $step['duration_minutes'])
+                            @if($step->duration_minutes)
                             <div class="flex items-center gap-2">
                                 <button type="button"
                                         class="step-timer-btn inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-medium transition-colors"
-                                        data-duration="{{ $step['duration_minutes'] * 60 }}"
-                                        aria-label="Iniciar temporizador de {{ $step['duration_minutes'] }} minutos">
+                                        data-duration="{{ $step->duration_minutes * 60 }}"
+                                        aria-label="Iniciar temporizador de {{ $step->duration_minutes }} minutos">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    {{ $step['duration_minutes'] }} min — Iniciar temporizador
+                                    {{ $step->duration_minutes }} min — Iniciar temporizador
                                 </button>
                             </div>
                             @endif
@@ -420,7 +428,7 @@
                              itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
                         <summary class="flex items-center justify-between px-5 py-4 cursor-pointer list-none">
                             <span class="font-semibold text-zinc-900 pr-4" itemprop="name">
-                                {{ $faq['question'] ?? '' }}
+                                {{ $faq->question ?? '' }}
                             </span>
                             <svg class="w-5 h-5 text-zinc-400 shrink-0 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -428,7 +436,7 @@
                         </summary>
                         <div class="px-5 pb-5 text-zinc-600 leading-relaxed prose prose-zinc max-w-none"
                              itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
-                            <div itemprop="text">{!! $faq['answer'] ?? '' !!}</div>
+                            <div itemprop="text">{!! $faq->answer ?? '' !!}</div>
                         </div>
                     </details>
                     @endforeach
@@ -436,40 +444,84 @@
             </section>
             @endif
 
-            {{-- ===== AMAZON BOOKS ===== --}}
+            {{-- ===== AMAZON BOOKS BANNER ===== --}}
             @if($recipe->books?->count() > 0)
-            <section id="libros" class="scroll-mt-20" aria-label="Libros relacionados">
-                <h2 class="text-2xl font-bold text-zinc-900 mb-5" style="font-family: 'Playfair Display', serif;">
-                    Libros Relacionados
-                </h2>
-                <div class="grid sm:grid-cols-2 gap-4">
-                    @foreach($recipe->books as $book)
-                    <div class="flex gap-4 p-4 bg-zinc-50 border border-zinc-100 rounded-2xl">
+            @foreach($recipe->books as $book)
+            @php
+                // Choose affiliate URL by visitor country (header or default)
+                $visitorCountry = strtoupper(request()->header('CF-IPCountry', 'US'));
+                $bookUrl = match(true) {
+                    in_array($visitorCountry, ['EC','MX','CL','PE','CO','GT','HN','SV','CR','NI','PA','BO','PY','UY','VE','DO','CU','PR']) => $book->amazon_url_mx ?? $book->amazon_url_us,
+                    $visitorCountry === 'ES'  => $book->amazon_url_es ?? $book->amazon_url_us,
+                    $visitorCountry === 'AR'  => $book->amazon_url_ar ?? $book->amazon_url_us,
+                    default                   => $book->amazon_url_us,
+                } ?? $book->amazon_url_us ?? '#';
+            @endphp
+            <section id="libro-{{ $book->id }}" class="scroll-mt-20" aria-label="Libro recomendado">
+                <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 p-6">
+                    {{-- Background glow --}}
+                    <div class="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+
+                    <div class="relative flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                        {{-- Book cover --}}
                         @if($book->cover_image_url)
-                        <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}"
-                             class="w-16 h-22 object-cover rounded-lg shadow-sm shrink-0" style="height:88px;">
+                        <div class="shrink-0">
+                            <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}"
+                                 class="w-20 h-28 object-cover rounded-xl shadow-xl shadow-black/40"
+                                 loading="lazy">
+                        </div>
+                        @else
+                        <div class="w-20 h-28 bg-zinc-700 rounded-xl flex items-center justify-center shrink-0">
+                            <svg class="w-8 h-8 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
                         @endif
-                        <div class="flex-1 min-w-0 space-y-2">
-                            <p class="font-semibold text-zinc-900 leading-snug line-clamp-2">{{ $book->title }}</p>
-                            @if($book->author)
-                            <p class="text-sm text-zinc-500">{{ $book->author }}</p>
-                            @endif
-                            <a href="{{ $book->amazon_url_mx ?? $book->amazon_url_us ?? '#' }}"
-                               target="_blank" rel="noopener noreferrer sponsored"
-                               class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-white rounded-lg text-xs font-semibold transition-colors">
-                                Ver en Amazon
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+
+                        {{-- Info --}}
+                        <div class="flex-1 min-w-0">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                 </svg>
-                            </a>
+                                Libro recomendado
+                            </span>
+                            <h3 class="font-bold text-white text-lg leading-snug mb-1">{{ $book->title }}</h3>
+                            @if($book->author)
+                            <p class="text-sm text-zinc-400 mb-3">por <span class="text-zinc-300">{{ $book->author }}</span></p>
+                            @endif
+                            @if($book->description)
+                            <p class="text-sm text-zinc-400 leading-relaxed line-clamp-2 mb-4">{{ $book->description }}</p>
+                            @else
+                            <p class="text-sm text-zinc-400 leading-relaxed mb-4">Este libro contiene esta y muchas más recetas auténticas. ¡Una adición imprescindible a tu colección de cocina!</p>
+                            @endif
+
+                            <div class="flex flex-wrap items-center gap-3">
+                                <a href="{{ $bookUrl }}"
+                                   target="_blank" rel="noopener noreferrer sponsored"
+                                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-900 font-bold rounded-xl text-sm transition-all hover:shadow-lg hover:-translate-y-0.5">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M16.612 15.473c-.536.374-1.307.583-1.965.583-1.962 0-3.495-1.54-3.495-3.507 0-1.963 1.533-3.507 3.495-3.507.658 0 1.429.213 1.965.587V8.27c-.635-.24-1.298-.362-1.965-.362-2.75 0-4.922 2.183-4.922 4.94 0 2.757 2.171 4.94 4.922 4.94.666 0 1.33-.122 1.965-.362v-1.953z"/>
+                                        <path d="M22 12c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2s10 4.477 10 10zm-2 0a8 8 0 10-16 0 8 8 0 0016 0z"/>
+                                    </svg>
+                                    Comprar en Amazon
+                                </a>
+                                @if(route('store.index'))
+                                <a href="{{ route('store.index') }}"
+                                   class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">
+                                    Ver más libros →
+                                </a>
+                                @endif
+                            </div>
                         </div>
                     </div>
-                    @endforeach
+
+                    <p class="relative text-xs text-zinc-600 mt-4 italic">
+                        * Enlace de afiliado — gano una pequeña comisión si compras, sin costo adicional para ti. Gracias por apoyar este sitio.
+                    </p>
                 </div>
-                <p class="text-xs text-zinc-400 mt-3 italic">
-                    * Como afiliado de Amazon, recibo una pequeña comisión si compras a través de estos enlaces, sin costo adicional para ti.
-                </p>
             </section>
+            @endforeach
             @endif
 
         </div>

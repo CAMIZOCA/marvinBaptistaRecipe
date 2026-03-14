@@ -13,27 +13,61 @@ class RecipeListController extends Controller
     {
         $query = Recipe::published()->with('categories');
 
-        if ($request->filled('dificultad')) {
-            $query->byDifficulty($request->dificultad);
-        }
-        if ($request->filled('pais')) {
-            $query->byCountry($request->pais);
-        }
-        if ($request->filled('buscar')) {
-            $query->where('title', 'like', '%' . $request->buscar . '%');
+        // Búsqueda por texto (name="search" en la vista)
+        if ($request->filled('search')) {
+            $term = $request->search;
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                  ->orWhere('description', 'like', "%{$term}%")
+                  ->orWhere('subtitle', 'like', "%{$term}%");
+            });
         }
 
-        $recipes = $query->latest('published_at')->paginate(12)->withQueryString();
+        // Dificultad: array de valores (name="difficulty[]" en la vista)
+        $difficulties = array_filter((array) $request->input('difficulty', []));
+        if (count($difficulties)) {
+            $query->whereIn('difficulty', $difficulties);
+        }
 
-        $categories = Category::topLevel()->with('children')->withCount(['recipes' => fn($q) => $q->published()])->ordered()->get();
-        $countries = Recipe::published()->whereNotNull('origin_country')->distinct()->pluck('origin_country')->sort()->values();
+        // País: array de valores (name="country[]" en la vista)
+        $countries = array_filter((array) $request->input('country', []));
+        if (count($countries)) {
+            $query->whereIn('origin_country', $countries);
+        }
+
+        // Ordenación
+        match ($request->input('sort', 'latest')) {
+            'popular' => $query->orderByDesc('view_count'),
+            'rating'  => $query->orderByDesc('schema_rating_value'),
+            default   => $query->latest('published_at'),
+        };
+
+        $recipes = $query->paginate(12)->withQueryString();
+
+        $categories = Category::topLevel()
+            ->with('children')
+            ->withCount(['recipes' => fn($q) => $q->published()])
+            ->ordered()
+            ->get();
+
+        $availableCountries = Recipe::published()
+            ->whereNotNull('origin_country')
+            ->distinct()
+            ->pluck('origin_country')
+            ->sort()
+            ->values();
 
         $seo = [
-            'title' => 'Todas las Recetas - ' . config('app.name'),
+            'title'       => 'Todas las Recetas - ' . config('app.name'),
             'description' => 'Explora nuestra colección de recetas latinoamericanas y mediterráneas. Encuentra recetas fáciles, rápidas y deliciosas.',
-            'canonical' => route('recipes.index'),
+            'canonical'   => route('recipes.index'),
         ];
 
-        return view('recipes.index', compact('recipes', 'categories', 'countries', 'seo'));
+        return view('recipes.index', [
+            'recipes'    => $recipes,
+            'categories' => $categories,
+            'countries'  => $availableCountries,
+            'seo'        => $seo,
+        ]);
     }
 }

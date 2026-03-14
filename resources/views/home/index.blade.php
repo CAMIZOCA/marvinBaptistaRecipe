@@ -133,13 +133,19 @@
         </div>
 
         {{-- Stats bar --}}
-        <div class="mt-12 grid grid-cols-3 gap-4 max-w-md lg:max-w-none lg:flex lg:gap-10">
-            @foreach([['✦', '10+', 'Recetas auténticas'], ['✦', '5', 'Países representados'], ['✦', '100%', 'Hecho con amor']] as [$icon, $num, $label])
+        <div class="mt-12 grid grid-cols-3 gap-6 max-w-md lg:max-w-none lg:flex lg:gap-12 border-t border-white/10 pt-8">
             <div class="text-center lg:text-left">
-                <p class="text-2xl font-black text-white">{{ $num }}</p>
-                <p class="text-xs text-zinc-400 mt-0.5">{{ $label }}</p>
+                <p class="text-3xl font-black text-white">{{ $totalRecipes ?? 0 }}</p>
+                <p class="text-xs text-zinc-400 mt-0.5 uppercase tracking-wide">Recetas auténticas</p>
             </div>
-            @endforeach
+            <div class="text-center lg:text-left">
+                <p class="text-3xl font-black text-white">{{ $totalCountries ?? 0 }}</p>
+                <p class="text-xs text-zinc-400 mt-0.5 uppercase tracking-wide">Países representados</p>
+            </div>
+            <div class="text-center lg:text-left">
+                <p class="text-3xl font-black text-white">100%</p>
+                <p class="text-xs text-zinc-400 mt-0.5 uppercase tracking-wide">Hecho con amor</p>
+            </div>
         </div>
     </div>
 </section>
@@ -435,6 +441,40 @@
     </div>
 </section>
 @endif
+
+{{-- ══════════════════════════════════════════════════════════
+     NEWSLETTER — Captación de emails
+══════════════════════════════════════════════════════════ --}}
+<section class="py-16 bg-white border-t border-zinc-100" aria-label="Newsletter">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 text-center">
+        <span class="inline-flex items-center gap-2 text-amber-500 text-sm font-semibold uppercase tracking-wider mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Recetas cada semana
+        </span>
+        <h2 class="text-3xl font-bold text-zinc-900 mb-3">
+            Nunca te pierdas una receta
+        </h2>
+        <p class="text-zinc-500 mb-8 leading-relaxed">
+            Recibe cada semana las mejores recetas, consejos de cocina y los secretos que no están en el blog. Sin spam, solo buena comida.
+        </p>
+        <form action="#" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+            @csrf
+            <input type="email" name="email" required
+                   placeholder="tu@email.com"
+                   class="flex-1 px-5 py-3.5 rounded-xl border border-zinc-200 text-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent placeholder-zinc-400">
+            <button type="submit"
+                    class="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all hover:shadow-lg text-sm whitespace-nowrap">
+                Suscribirme
+            </button>
+        </form>
+        <p class="text-xs text-zinc-400 mt-4">
+            Sin spam. Cancela cuando quieras. Ya somos
+            <strong class="text-zinc-600">{{ $totalRecipes ?? 0 }}+ recetas</strong> publicadas.
+        </p>
+    </div>
+</section>
 
 {{-- ══════════════════════════════════════════════════════════
      CTA FINAL — Newsletter / Invitación a explorar

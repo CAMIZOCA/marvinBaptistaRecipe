@@ -50,9 +50,13 @@ class HomeController extends Controller
             ->inRandomOrder()
             ->first();
 
+        $totalRecipes  = Recipe::published()->count();
+        $totalCountries = Recipe::published()->whereNotNull('origin_country')->distinct()->count('origin_country');
+
         return view('home.index', compact(
             'heroRecipes', 'featuredRecipes', 'latestRecipes',
-            'quickRecipes', 'featuredCategories', 'featuredBook'
+            'quickRecipes', 'featuredCategories', 'featuredBook',
+            'totalRecipes', 'totalCountries'
         ));
     }
 }

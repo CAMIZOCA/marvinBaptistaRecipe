@@ -30,6 +30,7 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
     // Recipes
     Route::prefix('recetas')->name('recipes.')->group(function () {
         Route::get('/', [RecipeController::class, 'index'])->name('index');
+        Route::post('/bulk-action', [RecipeController::class, 'bulkAction'])->name('bulk-action');
         Route::get('/crear', [RecipeController::class, 'create'])->name('create');
         Route::post('/', [RecipeController::class, 'store'])->name('store');
         Route::get('/{recipe}/editar', [RecipeController::class, 'edit'])->name('edit');

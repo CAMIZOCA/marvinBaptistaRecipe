@@ -39,6 +39,15 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="flex items-center gap-3 p-4 bg-red-900/50 border border-red-700 rounded-xl text-red-300 text-sm">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        {{ session('error') }}
+    </div>
+    @endif
+
     {{-- Filter Bar --}}
     <form method="GET" action="{{ route('admin.recipes.index') }}" class="flex flex-wrap items-center gap-3 p-4 bg-zinc-800 rounded-xl border border-zinc-700">
         <div class="flex-1 min-w-48">
@@ -86,148 +95,208 @@
         @endif
     </form>
 
-    {{-- Table --}}
-    <div class="bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden">
-        @if(isset($recipes) && $recipes->count() > 0)
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-zinc-700">
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Título</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Categorías</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dificultad</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Vistas</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">IA</th>
-                        <th class="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Estado</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-zinc-400 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-700/50">
-                    @foreach($recipes as $recipe)
-                    <tr class="hover:bg-zinc-700/30 transition-colors group">
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-3">
-                                @if($recipe->featured_image)
-                                <img src="{{ $recipe->featured_image }}" alt="{{ $recipe->title }}"
-                                     class="w-10 h-10 rounded-lg object-cover shrink-0">
-                                @else
-                                <div class="w-10 h-10 rounded-lg bg-zinc-700 flex items-center justify-center shrink-0">
-                                    <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
-                                @endif
-                                <div>
-                                    <a href="{{ route('admin.recipes.edit', $recipe) }}"
-                                       class="font-medium text-zinc-200 hover:text-amber-400 transition-colors line-clamp-1">
-                                        {{ $recipe->title }}
-                                    </a>
-                                    @if($recipe->subtitle)
-                                    <p class="text-xs text-zinc-500 line-clamp-1 mt-0.5">{{ $recipe->subtitle }}</p>
-                                    @endif
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex flex-wrap gap-1">
-                                @foreach($recipe->categories ?? [] as $cat)
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50">
-                                    {{ $cat->name }}
-                                </span>
-                                @endforeach
-                            </div>
-                        </td>
-                        <td class="px-4 py-3">
-                            @php
-                                $difficulty = $recipe->difficulty ?? null;
-                                $difficultyClasses = match($difficulty) {
-                                    'facil'   => 'bg-emerald-900/50 text-emerald-300 border-emerald-700/50',
-                                    'media'   => 'bg-yellow-900/50 text-yellow-300 border-yellow-700/50',
-                                    'dificil' => 'bg-red-900/50 text-red-300 border-red-700/50',
-                                    default   => 'bg-zinc-700 text-zinc-400 border-zinc-600',
-                                };
-                                $difficultyLabel = match($difficulty) {
-                                    'facil'   => 'Fácil',
-                                    'media'   => 'Media',
-                                    'dificil' => 'Difícil',
-                                    default   => '—',
-                                };
-                            @endphp
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $difficultyClasses }}">
-                                {{ $difficultyLabel }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="text-sm text-zinc-300 font-mono">{{ number_format($recipe->views_count ?? 0) }}</span>
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            @if($recipe->ai_enhanced_at)
-                            <span title="Mejorado con IA el {{ $recipe->ai_enhanced_at->format('d/m/Y') }}"
-                                  class="inline-flex items-center justify-center w-6 h-6 bg-violet-900/50 rounded-full">
-                                <svg class="w-3.5 h-3.5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                                </svg>
-                            </span>
-                            @else
-                            <span class="text-zinc-600 text-xs">—</span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <form method="POST" action="{{ route('admin.recipes.toggle-published', $recipe) }}" class="inline">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit"
-                                        class="relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-zinc-800 {{ $recipe->is_published ? 'bg-amber-500' : 'bg-zinc-600' }}"
-                                        title="{{ $recipe->is_published ? 'Publicada - click para despublicar' : 'Borrador - click para publicar' }}">
-                                    <span class="inline-block w-4 h-4 transform rounded-full bg-white transition-transform {{ $recipe->is_published ? 'translate-x-6' : 'translate-x-1' }}"></span>
-                                </button>
-                            </form>
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="{{ route('recipe.show', $recipe->slug) }}" target="_blank"
-                                   class="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors rounded"
-                                   title="Ver en el sitio">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                    </svg>
-                                </a>
-                                <a href="{{ route('admin.recipes.edit', $recipe) }}"
-                                   class="p-1.5 text-zinc-500 hover:text-amber-400 transition-colors rounded"
-                                   title="Editar">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </a>
-                                <form method="POST" action="{{ route('admin.recipes.destroy', $recipe) }}"
-                                      onsubmit="return confirm('¿Eliminar la receta «{{ addslashes($recipe->title) }}»? Esta acción no se puede deshacer.')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="p-1.5 text-zinc-500 hover:text-red-400 transition-colors rounded"
-                                            title="Eliminar">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    {{-- ===================== BULK ACTIONS FORM ===================== --}}
+    @if(isset($recipes) && $recipes->count() > 0)
+    <form id="bulk-form" method="POST" action="{{ route('admin.recipes.bulk-action') }}">
+        @csrf
+        <input type="hidden" name="action" id="bulk-action-value" value="">
+
+        {{-- Bulk Toolbar (hidden until items selected) --}}
+        <div id="bulk-bar"
+             class="hidden items-center gap-3 px-4 py-3 mb-3 bg-amber-950/60 border border-amber-700/60 rounded-xl transition-all">
+            <div class="flex items-center gap-2 text-amber-300 text-sm font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <span id="selected-count">0</span> receta(s) seleccionada(s)
+            </div>
+            <div class="flex items-center gap-2 ml-auto">
+                <button type="button" onclick="submitBulk('publish')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Publicar
+                </button>
+                <button type="button" onclick="submitBulk('unpublish')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-600 hover:bg-zinc-500 text-zinc-200 rounded-lg text-sm font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                    </svg>
+                    Despublicar
+                </button>
+                <button type="button" onclick="submitBulk('delete')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                    Eliminar
+                </button>
+                <button type="button" onclick="clearSelection()"
+                        class="px-3 py-1.5 text-zinc-500 hover:text-zinc-300 rounded-lg text-sm transition-colors"
+                        title="Limpiar selección">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        {{-- Table --}}
+        <div class="bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-zinc-700">
+                            {{-- Select All checkbox --}}
+                            <th class="px-4 py-3 w-10">
+                                <input type="checkbox" id="select-all"
+                                       class="w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 cursor-pointer focus:ring-amber-500 focus:ring-offset-zinc-800"
+                                       title="Seleccionar todas">
+                            </th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Título</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Categorías</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dificultad</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Vistas</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">IA</th>
+                            <th class="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Estado</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-zinc-400 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-700/50">
+                        @foreach($recipes as $recipe)
+                        <tr class="hover:bg-zinc-700/30 transition-colors group recipe-row" data-id="{{ $recipe->id }}">
+                            {{-- Row checkbox --}}
+                            <td class="px-4 py-3 w-10">
+                                <input type="checkbox" name="ids[]" value="{{ $recipe->id }}"
+                                       class="recipe-checkbox w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 cursor-pointer focus:ring-amber-500 focus:ring-offset-zinc-800">
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    @if($recipe->featured_image)
+                                    <img src="{{ $recipe->featured_image }}" alt="{{ $recipe->title }}"
+                                         class="w-10 h-10 rounded-lg object-cover shrink-0">
+                                    @else
+                                    <div class="w-10 h-10 rounded-lg bg-zinc-700 flex items-center justify-center shrink-0">
+                                        <svg class="w-5 h-5 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                         </svg>
+                                    </div>
+                                    @endif
+                                    <div>
+                                        <a href="{{ route('admin.recipes.edit', $recipe) }}"
+                                           class="font-medium text-zinc-200 hover:text-amber-400 transition-colors line-clamp-1">
+                                            {{ $recipe->title }}
+                                        </a>
+                                        @if($recipe->subtitle)
+                                        <p class="text-xs text-zinc-500 line-clamp-1 mt-0.5">{{ $recipe->subtitle }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach($recipe->categories ?? [] as $cat)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-700/50">
+                                        {{ $cat->name }}
+                                    </span>
+                                    @endforeach
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                @php
+                                    $difficulty = $recipe->difficulty ?? null;
+                                    $difficultyClasses = match($difficulty) {
+                                        'facil'   => 'bg-emerald-900/50 text-emerald-300 border-emerald-700/50',
+                                        'media'   => 'bg-yellow-900/50 text-yellow-300 border-yellow-700/50',
+                                        'dificil' => 'bg-red-900/50 text-red-300 border-red-700/50',
+                                        default   => 'bg-zinc-700 text-zinc-400 border-zinc-600',
+                                    };
+                                    $difficultyLabel = match($difficulty) {
+                                        'facil'   => 'Fácil',
+                                        'media'   => 'Media',
+                                        'dificil' => 'Difícil',
+                                        default   => '—',
+                                    };
+                                @endphp
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $difficultyClasses }}">
+                                    {{ $difficultyLabel }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="text-sm text-zinc-300 font-mono">{{ number_format($recipe->views_count ?? 0) }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                @if($recipe->ai_enhanced_at)
+                                <span title="Mejorado con IA el {{ $recipe->ai_enhanced_at->format('d/m/Y') }}"
+                                      class="inline-flex items-center justify-center w-6 h-6 bg-violet-900/50 rounded-full">
+                                    <svg class="w-3.5 h-3.5 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </span>
+                                @else
+                                <span class="text-zinc-600 text-xs">—</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <form method="POST" action="{{ route('admin.recipes.toggle-published', $recipe) }}" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit"
+                                            class="relative inline-flex items-center h-6 w-11 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-zinc-800 {{ $recipe->is_published ? 'bg-amber-500' : 'bg-zinc-600' }}"
+                                            title="{{ $recipe->is_published ? 'Publicada - click para despublicar' : 'Borrador - click para publicar' }}">
+                                        <span class="inline-block w-4 h-4 transform rounded-full bg-white transition-transform {{ $recipe->is_published ? 'translate-x-6' : 'translate-x-1' }}"></span>
                                     </button>
                                 </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('recipe.show', $recipe->slug) }}" target="_blank"
+                                       class="p-1.5 text-zinc-500 hover:text-zinc-300 transition-colors rounded"
+                                       title="Ver en el sitio">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        </svg>
+                                    </a>
+                                    <a href="{{ route('admin.recipes.edit', $recipe) }}"
+                                       class="p-1.5 text-zinc-500 hover:text-amber-400 transition-colors rounded"
+                                       title="Editar">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.recipes.destroy', $recipe) }}"
+                                          onsubmit="return confirm('¿Eliminar la receta «{{ addslashes($recipe->title) }}»? Esta acción no se puede deshacer.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="p-1.5 text-zinc-500 hover:text-red-400 transition-colors rounded"
+                                                title="Eliminar">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
 
-        {{-- Pagination --}}
-        @if($recipes->hasPages())
-        <div class="px-4 py-3 border-t border-zinc-700">
-            {{ $recipes->appends(request()->query())->links() }}
+            {{-- Pagination --}}
+            @if($recipes->hasPages())
+            <div class="px-4 py-3 border-t border-zinc-700">
+                {{ $recipes->appends(request()->query())->links() }}
+            </div>
+            @endif
         </div>
-        @endif
+    </form>
 
-        @else
-        {{-- Empty State --}}
+    @else
+    {{-- Empty State --}}
+    <div class="bg-zinc-800 rounded-xl border border-zinc-700 overflow-hidden">
         <div class="flex flex-col items-center justify-center py-20 px-4">
             <div class="w-20 h-20 bg-zinc-700/50 rounded-2xl flex items-center justify-center mb-6">
                 <svg class="w-10 h-10 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +327,93 @@
                 @endif
             </div>
         </div>
-        @endif
     </div>
+    @endif
+
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const selectAll    = document.getElementById('select-all');
+    const bulkBar      = document.getElementById('bulk-bar');
+    const countEl      = document.getElementById('selected-count');
+    const actionInput  = document.getElementById('bulk-action-value');
+    const bulkForm     = document.getElementById('bulk-form');
+
+    if (!selectAll) return; // no recipes on page
+
+    function getChecked() {
+        return document.querySelectorAll('.recipe-checkbox:checked');
+    }
+
+    function getAllCheckboxes() {
+        return document.querySelectorAll('.recipe-checkbox');
+    }
+
+    function updateBar() {
+        const checked = getChecked();
+        const total   = getAllCheckboxes().length;
+        const count   = checked.length;
+
+        if (count > 0) {
+            bulkBar.classList.remove('hidden');
+            bulkBar.classList.add('flex');
+            countEl.textContent = count;
+        } else {
+            bulkBar.classList.add('hidden');
+            bulkBar.classList.remove('flex');
+        }
+
+        // Update select-all state
+        selectAll.indeterminate = count > 0 && count < total;
+        selectAll.checked       = count === total && total > 0;
+
+        // Highlight selected rows
+        document.querySelectorAll('.recipe-row').forEach(row => {
+            const cb = row.querySelector('.recipe-checkbox');
+            if (cb && cb.checked) {
+                row.classList.add('bg-amber-950/20');
+            } else {
+                row.classList.remove('bg-amber-950/20');
+            }
+        });
+    }
+
+    // Select all toggle
+    selectAll.addEventListener('change', function () {
+        getAllCheckboxes().forEach(cb => { cb.checked = this.checked; });
+        updateBar();
+    });
+
+    // Individual checkbox change
+    document.querySelectorAll('.recipe-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateBar);
+    });
+
+    // Submit bulk action
+    window.submitBulk = function (action) {
+        const checked = getChecked();
+        if (checked.length === 0) return;
+
+        if (action === 'delete') {
+            if (!confirm(`¿Eliminar ${checked.length} receta(s) seleccionada(s)?\n\nEsta acción no se puede deshacer.`)) {
+                return;
+            }
+        }
+
+        actionInput.value = action;
+        bulkForm.submit();
+    };
+
+    // Clear selection
+    window.clearSelection = function () {
+        getAllCheckboxes().forEach(cb => { cb.checked = false; });
+        selectAll.checked       = false;
+        selectAll.indeterminate = false;
+        updateBar();
+    };
+})();
+</script>
+@endpush
 @endsection

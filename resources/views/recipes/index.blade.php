@@ -72,8 +72,9 @@
                             class="flex-1 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-semibold transition-colors">
                         Filtrar
                     </button>
-                    @if(request()->hasAny(['search','difficulty','country']))
+                    @if(request()->hasAny(['search', 'difficulty', 'country', 'sort']))
                     <a href="{{ route('recipes.index') }}"
+                       title="Limpiar filtros"
                        class="py-2.5 px-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-600 rounded-xl text-sm transition-colors">
                         ✕
                     </a>
@@ -87,7 +88,7 @@
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-zinc-900" style="font-family: 'Playfair Display', serif;">
-                        {{ request()->hasAny(['search','difficulty','country']) ? 'Resultados' : 'Todas las Recetas' }}
+                        {{ request()->hasAny(['search', 'difficulty', 'country']) ? 'Resultados de búsqueda' : 'Todas las Recetas' }}
                     </h1>
                     @if(isset($recipes))
                     <p class="text-sm text-zinc-500 mt-0.5">{{ $recipes->total() }} recetas encontradas</p>

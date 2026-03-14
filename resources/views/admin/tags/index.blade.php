@@ -18,10 +18,45 @@
     </div>
     @endif
 
-    {{-- Inline Create Form --}}
-    <div class="bg-zinc-800 rounded-xl border border-zinc-700 p-5">
+    {{-- Inline Create / Edit Form --}}
+    <div class="bg-zinc-800 rounded-xl border {{ isset($editTag) ? 'border-amber-500' : 'border-zinc-700' }} p-5">
+        @if(isset($editTag))
+        {{-- EDIT MODE --}}
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-amber-400">Editando: {{ $editTag->name }}</h2>
+            <a href="{{ route('admin.etiquetas.index') }}" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">✕ Cancelar</a>
+        </div>
+        <form method="POST" action="{{ route('admin.etiquetas.update', $editTag) }}" class="flex flex-wrap items-end gap-4">
+            @csrf
+            @method('PUT')
+            <div class="flex-1 min-w-40">
+                <label class="block text-xs text-zinc-400 mb-1.5">Nombre *</label>
+                <input type="text" name="name" value="{{ old('name', $editTag->name) }}"
+                       class="w-full px-4 py-2.5 bg-zinc-700 border border-amber-500 text-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
+                       required>
+            </div>
+            <div class="w-40">
+                <label class="block text-xs text-zinc-400 mb-1.5">Color</label>
+                <div class="flex items-center gap-2">
+                    <input type="color" name="color" value="{{ old('color', $editTag->color ?? '#6366f1') }}"
+                           id="edit-color-picker"
+                           class="w-10 h-10 rounded-lg bg-zinc-700 border border-zinc-600 cursor-pointer p-1">
+                    <input type="text" id="edit-color-hex" value="{{ old('color', $editTag->color ?? '#6366f1') }}"
+                           class="flex-1 px-3 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-300 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+                </div>
+            </div>
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-900 rounded-xl font-bold text-sm transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Guardar cambios
+            </button>
+        </form>
+        @else
+        {{-- CREATE MODE --}}
         <h2 class="text-sm font-semibold text-zinc-300 mb-4">Nueva Etiqueta</h2>
-        <form method="POST" action="{{ route('admin.etiquetas.index') }}" class="flex flex-wrap items-end gap-4">
+        <form method="POST" action="{{ route('admin.etiquetas.store') }}" class="flex flex-wrap items-end gap-4">
             @csrf
             <div class="flex-1 min-w-40">
                 <label class="block text-xs text-zinc-400 mb-1.5">Nombre *</label>
@@ -34,6 +69,7 @@
                 <label class="block text-xs text-zinc-400 mb-1.5">Color</label>
                 <div class="flex items-center gap-2">
                     <input type="color" name="color" value="{{ old('color', '#6366f1') }}"
+                           id="color-picker"
                            class="w-10 h-10 rounded-lg bg-zinc-700 border border-zinc-600 cursor-pointer p-1">
                     <input type="text" id="color-hex-input" value="{{ old('color', '#6366f1') }}"
                            placeholder="#6366f1"
@@ -43,7 +79,7 @@
             <div>
                 <label class="block text-xs text-zinc-400 mb-1.5">Slug (opcional)</label>
                 <input type="text" name="slug" value="{{ old('slug') }}"
-                       placeholder="se genera automáticamente"
+                       placeholder="auto-generado"
                        class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-300 rounded-xl placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
             </div>
             <button type="submit"
@@ -54,6 +90,7 @@
                 Añadir
             </button>
         </form>
+        @endif
     </div>
 
     {{-- Tags Grid --}}
@@ -72,13 +109,13 @@
                 </div>
             </div>
             <div class="flex items-center gap-1 shrink-0">
-                <a href="{{ route('admin.etiquetas.index') }}/{{ $tag->id }}/edit"
-                   class="p-1.5 text-zinc-500 hover:text-amber-400 transition-colors rounded">
+                <a href="{{ route('admin.etiquetas.edit', $tag) }}"
+                   class="p1.5 text-zinc-500 hover:text-amber-400 transition-colors rounded" title="Editar">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
                 </a>
-                <form method="POST" action="{{ route('admin.etiquetas.index') }}/{{ $tag->id }}"
+                <form method="POST" action="{{ route('admin.etiquetas.destroy', $tag) }}"
                       onsubmit="return confirm('¿Eliminar la etiqueta «{{ addslashes($tag->name) }}»?')">
                     @csrf
                     @method('DELETE')

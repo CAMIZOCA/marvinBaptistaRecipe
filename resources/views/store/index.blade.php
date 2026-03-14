@@ -34,13 +34,13 @@
     @if(isset($cuisineTypes) && count($cuisineTypes) > 0)
     <div class="flex flex-wrap gap-2 mb-8" role="tablist" aria-label="Filtrar por tipo de cocina">
         <a href="{{ route('store.index') }}"
-           class="px-5 py-2 rounded-full text-sm font-medium transition-colors {{ !request('cuisine') ? 'bg-amber-500 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200' }}">
+           class="px-5 py-2 rounded-full text-sm font-medium transition-colors {{ !request('tipo') ? 'bg-amber-500 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200' }}">
             Todos
         </a>
         @foreach($cuisineTypes as $cuisine)
-        <a href="{{ route('store.index') }}?cuisine={{ urlencode($cuisine) }}"
-           class="px-5 py-2 rounded-full text-sm font-medium transition-colors {{ request('cuisine') === $cuisine ? 'bg-amber-500 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200' }}">
-            {{ $cuisine }}
+        <a href="{{ route('store.index', ['tipo' => $cuisine]) }}"
+           class="px-5 py-2 rounded-full text-sm font-medium transition-colors {{ request('tipo') === $cuisine ? 'bg-amber-500 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200' }}">
+            {{ ucfirst($cuisine) }}
         </a>
         @endforeach
     </div>
@@ -51,7 +51,7 @@
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @foreach($books as $book)
         <article class="bg-white rounded-2xl border border-zinc-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group">
-            <a href="{{ route('store.show', $book->id) }}" class="block">
+            <a href="{{ route('store.show', $book->slug) }}" class="block">
                 <div class="aspect-[3/4] bg-zinc-50 flex items-center justify-center p-4 overflow-hidden">
                     @if($book->cover_image_url)
                     <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}"
@@ -71,7 +71,7 @@
                 <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">{{ $book->cuisine_type }}</span>
                 @endif
                 <h2 class="font-bold text-zinc-900 leading-snug line-clamp-2">
-                    <a href="{{ route('store.show', $book->id) }}" class="hover:text-amber-600 transition-colors">
+                    <a href="{{ route('store.show', $book->slug) }}" class="hover:text-amber-600 transition-colors">
                         {{ $book->title }}
                     </a>
                 </h2>

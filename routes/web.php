@@ -33,6 +33,9 @@ Route::get('/tienda/{book}', [StoreController::class, 'show'])->name('store.show
 // Static pages
 Route::get('/pagina/{page}', [PageController::class, 'show'])->name('page.show');
 
+// Admin routes — loaded BEFORE the /{slug} catch-all to avoid conflict
+require __DIR__.'/admin.php';
+
 // Recipe show — must be LAST (catch-all by slug)
 Route::get('/{slug}', [RecipeController::class, 'show'])->name('recipe.show')
     ->where('slug', '[a-z0-9\-]+');
