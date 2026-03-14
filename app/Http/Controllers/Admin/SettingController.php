@@ -10,40 +10,64 @@ use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    private array $defaultSettings = [
-        'general' => ['site_name', 'site_tagline', 'author_name', 'author_bio', 'author_avatar', 'contact_email'],
-        'amazon' => ['affiliate_tag', 'default_country'],
-        'seo' => ['default_og_image', 'google_analytics_id', 'google_search_console'],
-        'social' => ['facebook_url', 'instagram_url', 'pinterest_url', 'youtube_url'],
+    /** Flat key → group mapping */
+    private const GROUPS = [
+        'site_name'               => 'general',
+        'site_tagline'            => 'general',
+        'site_url'                => 'general',
+        'contact_email'           => 'general',
+        'logo_url'                => 'general',
+        'recipes_per_page'        => 'general',
+        'maintenance_mode'        => 'general',
+
+        'amazon_tag_us'           => 'amazon',
+        'amazon_tag_mx'           => 'amazon',
+        'amazon_tag_es'           => 'amazon',
+        'amazon_tag_ar'           => 'amazon',
+        'affiliate_disclaimer'    => 'amazon',
+
+        'default_meta_title'      => 'seo',
+        'default_meta_description'=> 'seo',
+        'google_analytics_id'     => 'seo',
+        'google_search_console'   => 'seo',
+        'default_og_image'        => 'seo',
+
+        'social_instagram'        => 'social',
+        'social_youtube'          => 'social',
+        'social_facebook'         => 'social',
+        'social_tiktok'           => 'social',
+        'social_pinterest'        => 'social',
+        'social_twitter'          => 'social',
+
+        'anthropic_api_key'       => 'ai',
+        'anthropic_model'         => 'ai',
     ];
 
     public function index(): View
     {
         $settings = [];
-        foreach ($this->defaultSettings as $group => $keys) {
-            foreach ($keys as $key) {
-                $settings[$group][$key] = Setting::get("{$group}.{$key}");
-            }
+        foreach (array_keys(self::GROUPS) as $key) {
+            $settings[$key] = Setting::get($key);
         }
+
         return view('admin.settings.index', compact('settings'));
     }
 
     public function update(Request $request): RedirectResponse
     {
-        $request->validate([
-            'general.site_name' => ['nullable', 'string', 'max:255'],
-            'general.author_name' => ['nullable', 'string', 'max:255'],
-            'amazon.affiliate_tag' => ['nullable', 'string', 'max:100'],
-            'seo.google_analytics_id' => ['nullable', 'string', 'max:50'],
-        ]);
+        $data = $request->input('settings', []);
 
-        foreach ($this->defaultSettings as $group => $keys) {
-            foreach ($keys as $key) {
-                $value = $request->input("{$group}.{$key}");
-                if ($value !== null) {
-                    Setting::set("{$group}.{$key}", $value, $group);
-                }
+        foreach ($data as $key => $value) {
+            if (!array_key_exists($key, self::GROUPS)) {
+                continue;
             }
+
+            // For API key: skip if blank (don't overwrite with empty)
+            if ($key === 'anthropic_api_key' && blank($value)) {
+                continue;
+            }
+
+            Setting::set($key, $value ?? '', self::GROUPS[$key]);
         }
 
         return back()->with('success', '¡Configuración guardada exitosamente!');

@@ -289,7 +289,15 @@
                     + Añadir Ingrediente
                 </button>
 
-                <textarea id="ingredients_json" name="ingredients_json" class="hidden">{{ old('ingredients_json', json_encode($recipe->ingredients ?? [])) }}</textarea>
+                <textarea id="ingredients_json" name="ingredients_json" class="hidden">{{ old('ingredients_json', json_encode(
+                    ($recipe->ingredients ?? collect())->map(fn($i) => [
+                        'amount' => $i->amount,
+                        'unit'   => $i->unit,
+                        'name'   => $i->ingredient_name,
+                        'notes'  => $i->notes,
+                        'group'  => $i->ingredient_group,
+                    ])->values()
+                )) }}</textarea>
 
                 <div class="mt-6 p-4 bg-zinc-700/30 rounded-xl border border-zinc-700 text-xs text-zinc-500">
                     <p class="font-medium text-zinc-400 mb-1">Guía de grupos</p>

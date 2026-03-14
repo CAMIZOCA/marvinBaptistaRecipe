@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AmazonBook;
 use App\Models\Recipe;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
 
 class RecipeEnhancer
@@ -14,14 +15,23 @@ class RecipeEnhancer
 
         $prompt = $this->buildUserPrompt($recipe);
 
+        $apiKey = Setting::get('anthropic_api_key') ?: config('services.anthropic.key');
+        $model  = Setting::get('anthropic_model')   ?: config('ai.anthropic.model');
+
+        if (blank($apiKey)) {
+            throw new \RuntimeException(
+                'No hay clave API de IA configurada. Ve a Ajustes → IA y agrega tu clave de Anthropic.'
+            );
+        }
+
         $response = Http::withHeaders([
-            'x-api-key' => config('services.anthropic.key'),
+            'x-api-key'         => $apiKey,
             'anthropic-version' => config('ai.anthropic.version', '2023-06-01'),
-            'content-type' => 'application/json',
+            'content-type'      => 'application/json',
         ])
         ->timeout(config('ai.anthropic.timeout', 90))
         ->post(config('ai.anthropic.api_url'), [
-            'model' => config('ai.anthropic.model'),
+            'model' => $model,
             'max_tokens' => config('ai.anthropic.max_tokens', 4096),
             'system' => config('ai.system_prompt'),
             'messages' => [

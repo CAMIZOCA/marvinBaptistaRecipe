@@ -71,4 +71,5 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
     // Settings
     Route::get('/ajustes', [SettingController::class, 'index'])->name('settings.index');
     Route::put('/ajustes', [SettingController::class, 'update'])->name('settings.update');
+    Route::post('/ajustes/probar-ia', [RecipeAiController::class, 'testApiKey'])->name('settings.test-ai');
 });

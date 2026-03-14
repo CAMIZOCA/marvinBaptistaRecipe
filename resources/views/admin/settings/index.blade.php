@@ -24,6 +24,7 @@
                 ['id' => 'amazon',   'label' => 'Amazon'],
                 ['id' => 'seo',      'label' => 'SEO'],
                 ['id' => 'social',   'label' => 'Redes Sociales'],
+                ['id' => 'ia',       'label' => '✦ IA'],
             ] as $tab)
             <button type="button"
                     class="settings-tab flex-shrink-0 px-6 py-3.5 text-sm font-medium transition-colors border-b-2 focus:outline-none"
@@ -190,6 +191,113 @@
                 </div>
             </div>
 
+            {{-- ==================== IA ==================== --}}
+            <div id="settings-panel-ia" class="settings-panel hidden space-y-5">
+
+                <div class="p-4 bg-violet-900/20 border border-violet-700/40 rounded-xl">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-violet-600/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+                            <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-violet-300 mb-1">Mejora con Inteligencia Artificial</p>
+                            <p class="text-xs text-violet-400/80">
+                                Usa la API de Anthropic (Claude) para mejorar el SEO, agregar historia cultural y generar FAQs automáticamente para cada receta.
+                                Obtén tu clave gratuita en
+                                <a href="https://console.anthropic.com/" target="_blank" class="underline hover:text-violet-200">console.anthropic.com</a>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    {{-- API Key --}}
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">
+                            Clave API de Anthropic
+                            @if($settings['anthropic_api_key'] ?? null)
+                                <span class="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-900/40 border border-emerald-700/50 text-emerald-400 rounded-full text-xs font-normal">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                    Configurada
+                                </span>
+                            @endif
+                        </label>
+                        <div class="relative">
+                            <input type="password"
+                                   name="settings[anthropic_api_key]"
+                                   id="anthropic_api_key"
+                                   value=""
+                                   placeholder="{{ $settings['anthropic_api_key'] ? 'sk-ant-••••••••••••••••••••' : 'sk-ant-api03-...' }}"
+                                   autocomplete="new-password"
+                                   class="w-full px-4 py-2.5 pr-12 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+                            <button type="button" id="toggle-key-visibility"
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                                <svg class="w-4 h-4 eye-open" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <svg class="w-4 h-4 eye-closed hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-xs text-zinc-500">Deja en blanco para mantener la clave actual. La clave nunca se muestra una vez guardada.</p>
+                    </div>
+
+                    {{-- Model --}}
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo de Claude</label>
+                        <select name="settings[anthropic_model]"
+                                class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm">
+                            @foreach([
+                                'claude-haiku-3-5'   => 'Claude Haiku 3.5 — Rápido y económico',
+                                'claude-sonnet-4-5'  => 'Claude Sonnet 4.5 — Equilibrado',
+                                'claude-sonnet-4-6'  => 'Claude Sonnet 4.6 — Recomendado ✦',
+                                'claude-opus-4-5'    => 'Claude Opus 4.5 — Máxima calidad',
+                            ] as $value => $label)
+                            <option value="{{ $value }}"
+                                {{ ($settings['anthropic_model'] ?? 'claude-sonnet-4-6') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- Test Connection --}}
+                    <div class="pt-2">
+                        <button type="button" id="test-ai-btn"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-sm font-medium transition-colors disabled:opacity-50">
+                            <svg id="test-ai-spinner" class="w-4 h-4 hidden animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                            <svg id="test-ai-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Probar conexión
+                        </button>
+
+                        <div id="test-ai-result" class="mt-3 hidden p-3 rounded-xl text-sm font-medium"></div>
+                    </div>
+
+                    {{-- Info cards --}}
+                    <div class="grid md:grid-cols-3 gap-3 pt-2">
+                        @foreach([
+                            ['label' => 'SEO Automático',   'desc' => 'Genera títulos y descripciones SEO optimizados para cada receta'],
+                            ['label' => 'Historia Cultural','desc' => 'Agrega el origen e historia de la receta para mejorar la retención'],
+                            ['label' => 'FAQs + Tips',      'desc' => 'Crea preguntas frecuentes y secretos de chef para tráfico long-tail'],
+                        ] as $card)
+                        <div class="p-3 bg-zinc-700/30 border border-zinc-700 rounded-xl">
+                            <p class="text-xs font-semibold text-violet-400 mb-1">{{ $card['label'] }}</p>
+                            <p class="text-xs text-zinc-500">{{ $card['desc'] }}</p>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
             <div class="pt-4 border-t border-zinc-700 flex items-center gap-3">
                 <button type="submit"
                         class="inline-flex items-center gap-2 px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-zinc-900 rounded-xl font-bold text-sm transition-colors">
@@ -231,6 +339,66 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var stored = sessionStorage.getItem(activeKey) || 'general';
     activateTab(stored);
+
+    // ── Show/hide API key ──────────────────────────────────────────
+    var toggleBtn = document.getElementById('toggle-key-visibility');
+    var keyInput  = document.getElementById('anthropic_api_key');
+    if (toggleBtn && keyInput) {
+        toggleBtn.addEventListener('click', function () {
+            var isPassword = keyInput.type === 'password';
+            keyInput.type  = isPassword ? 'text' : 'password';
+            toggleBtn.querySelector('.eye-open').classList.toggle('hidden', isPassword);
+            toggleBtn.querySelector('.eye-closed').classList.toggle('hidden', !isPassword);
+        });
+    }
+
+    // ── Test AI Connection ─────────────────────────────────────────
+    var testBtn     = document.getElementById('test-ai-btn');
+    var testResult  = document.getElementById('test-ai-result');
+    var testSpinner = document.getElementById('test-ai-spinner');
+    var testIcon    = document.getElementById('test-ai-icon');
+    var csrfToken   = document.querySelector('meta[name="csrf-token"]')?.content
+                   || '{{ csrf_token() }}';
+
+    if (testBtn) {
+        testBtn.addEventListener('click', function () {
+            testBtn.disabled = true;
+            testSpinner.classList.remove('hidden');
+            testIcon.classList.add('hidden');
+            testResult.classList.add('hidden');
+
+            fetch('{{ route('admin.settings.test-ai') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                testResult.classList.remove('hidden', 'bg-emerald-900/40', 'border-emerald-700/50', 'text-emerald-300',
+                                                        'bg-red-900/40',     'border-red-700/50',     'text-red-300');
+                if (data.ok) {
+                    testResult.className = 'mt-3 p-3 rounded-xl text-sm font-medium bg-emerald-900/40 border border-emerald-700/50 text-emerald-300';
+                    testResult.textContent = '✓ ' + data.message;
+                } else {
+                    testResult.className = 'mt-3 p-3 rounded-xl text-sm font-medium bg-red-900/40 border border-red-700/50 text-red-300';
+                    testResult.textContent = '✗ ' + data.message;
+                }
+            })
+            .catch(function () {
+                testResult.className = 'mt-3 p-3 rounded-xl text-sm font-medium bg-red-900/40 border border-red-700/50 text-red-300';
+                testResult.textContent = '✗ Error de red. Verifica tu conexión.';
+                testResult.classList.remove('hidden');
+            })
+            .finally(function () {
+                testBtn.disabled = false;
+                testSpinner.classList.add('hidden');
+                testIcon.classList.remove('hidden');
+            });
+        });
+    }
 });
 </script>
 @endsection
