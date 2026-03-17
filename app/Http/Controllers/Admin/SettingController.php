@@ -31,6 +31,8 @@ class SettingController extends Controller
         'google_analytics_id'     => 'seo',
         'google_search_console'   => 'seo',
         'default_og_image'        => 'seo',
+        'ga4_property_id'         => 'seo',
+        'search_console_site_url' => 'seo',
 
         'social_instagram'        => 'social',
         'social_youtube'          => 'social',
