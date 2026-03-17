@@ -159,6 +159,39 @@
                                placeholder="código de verificación"
                                class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                     </div>
+
+                    {{-- Google API (Dashboard Analytics) --}}
+                    <div class="md:col-span-2 pt-2 border-t border-zinc-700">
+                        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">API de Google para Dashboard</p>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-300 mb-1.5">
+                                    GA4 Property ID
+                                    <span class="text-zinc-500 font-normal text-xs ml-1">(numérico)</span>
+                                </label>
+                                <input type="text" name="settings[ga4_property_id]"
+                                       value="{{ old('settings.ga4_property_id', $settings['ga4_property_id'] ?? '') }}"
+                                       placeholder="123456789"
+                                       class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <p class="mt-1 text-xs text-zinc-500">GA4 Admin → Configuración de la propiedad → ID de propiedad (ej: 123456789)</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-zinc-300 mb-1.5">
+                                    Search Console URL
+                                </label>
+                                <input type="text" name="settings[search_console_site_url]"
+                                       value="{{ old('settings.search_console_site_url', $settings['search_console_site_url'] ?? '') }}"
+                                       placeholder="https://marvinbaptista.com/"
+                                       class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <p class="mt-1 text-xs text-zinc-500">URL exacta como aparece en Search Console (con https:// y barra final)</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-zinc-900/50 border border-zinc-700 rounded-xl text-xs text-zinc-400 space-y-1">
+                            <p class="font-medium text-zinc-300">Requisito: Archivo de credenciales Google Service Account</p>
+                            <p>Sube el archivo JSON al servidor en: <code class="bg-zinc-800 px-1.5 py-0.5 rounded font-mono">storage/app/google-credentials.json</code></p>
+                            <p>Asegúrate de dar acceso al email de la cuenta de servicio en GA4 y Search Console.</p>
+                        </div>
+                    </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-zinc-300 mb-1.5">OG Image por defecto</label>
                         <input type="url" name="settings[default_og_image]"

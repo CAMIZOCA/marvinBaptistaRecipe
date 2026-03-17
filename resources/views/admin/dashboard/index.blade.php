@@ -4,6 +4,161 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
+
+    {{-- ══════════════════════════════════════════════════════════════
+         ANALYTICS ROW  (GA4 + Search Console)
+    ══════════════════════════════════════════════════════════════ --}}
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-zinc-500 uppercase tracking-wider">Últimos 7 días</h2>
+            @if($googleConfigured)
+                <span class="inline-flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    API conectada · caché 4h
+                </span>
+            @else
+                <a href="{{ route('admin.settings.index') }}#seo"
+                   class="inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>
+                    Configurar Google API
+                </a>
+            @endif
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+
+            {{-- GA4: Visitantes únicos --}}
+            <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+                    </div>
+                    <span class="text-xs text-zinc-400 font-medium">Visitantes</span>
+                </div>
+                @if($ga4Stats)
+                    <p class="text-xl font-bold text-zinc-800">{{ number_format($ga4Stats['active_users']) }}</p>
+                @else
+                    <p class="text-xl font-bold text-zinc-300">—</p>
+                @endif
+                <p class="text-xs text-zinc-400 mt-0.5">GA4 · únicos</p>
+            </div>
+
+            {{-- GA4: Sesiones --}}
+            <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    </div>
+                    <span class="text-xs text-zinc-400 font-medium">Sesiones</span>
+                </div>
+                @if($ga4Stats)
+                    <p class="text-xl font-bold text-zinc-800">{{ number_format($ga4Stats['sessions']) }}</p>
+                @else
+                    <p class="text-xl font-bold text-zinc-300">—</p>
+                @endif
+                <p class="text-xs text-zinc-400 mt-0.5">GA4</p>
+            </div>
+
+            {{-- GA4: Páginas vistas --}}
+            <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-violet-50 text-violet-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </div>
+                    <span class="text-xs text-zinc-400 font-medium">Páginas vistas</span>
+                </div>
+                @if($ga4Stats)
+                    <p class="text-xl font-bold text-zinc-800">{{ number_format($ga4Stats['page_views']) }}</p>
+                @else
+                    <p class="text-xl font-bold text-zinc-300">—</p>
+                @endif
+                <p class="text-xs text-zinc-400 mt-0.5">GA4</p>
+            </div>
+
+            {{-- Search Console: Clics --}}
+            <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-green-50 text-green-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                    </div>
+                    <span class="text-xs text-zinc-400 font-medium">Clics</span>
+                </div>
+                @if($scStats)
+                    <p class="text-xl font-bold text-zinc-800">{{ number_format($scStats['clicks']) }}</p>
+                @else
+                    <p class="text-xl font-bold text-zinc-300">—</p>
+                @endif
+                <p class="text-xs text-zinc-400 mt-0.5">Search Console</p>
+            </div>
+
+            {{-- Search Console: Impresiones --}}
+            <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-teal-50 text-teal-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+                    </div>
+                    <span class="text-xs text-zinc-400 font-medium">Impresiones</span>
+                </div>
+                @if($scStats)
+                    <p class="text-xl font-bold text-zinc-800">{{ number_format($scStats['impressions']) }}</p>
+                @else
+                    <p class="text-xl font-bold text-zinc-300">—</p>
+                @endif
+                <p class="text-xs text-zinc-400 mt-0.5">Search Console</p>
+            </div>
+
+            {{-- Páginas en sitemap --}}
+            <div class="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-7 h-7 bg-amber-50 text-amber-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                    </div>
+                    <span class="text-xs text-zinc-400 font-medium">En sitemap</span>
+                </div>
+                <p class="text-xl font-bold text-zinc-800">{{ number_format($stats['sitemap_pages']) }}</p>
+                <p class="text-xs text-zinc-400 mt-0.5">
+                    <a href="/sitemap.xml" target="_blank" class="hover:text-amber-500 transition-colors">páginas publicadas ↗</a>
+                </p>
+            </div>
+
+        </div>
+
+        {{-- SC Posición promedio + CTR row --}}
+        @if($scStats)
+        <div class="grid grid-cols-2 gap-3 mt-3">
+            <div class="bg-white rounded-xl border border-zinc-200 px-4 py-3 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-zinc-400 font-medium">Posición promedio Google</p>
+                    <p class="text-lg font-bold text-zinc-800 mt-0.5">#{{ $scStats['position'] }}</p>
+                </div>
+                <div class="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl border border-zinc-200 px-4 py-3 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-zinc-400 font-medium">CTR orgánico</p>
+                    <p class="text-lg font-bold text-zinc-800 mt-0.5">{{ $scStats['ctr'] }}%</p>
+                </div>
+                <div class="w-8 h-8 bg-cyan-50 text-cyan-500 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/></svg>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Setup notice --}}
+        @if(!$googleConfigured)
+        <div class="mt-3 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3 text-sm">
+            <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0"/></svg>
+            <div>
+                <p class="font-medium text-amber-800">Para ver datos reales de GA4 y Search Console</p>
+                <p class="text-amber-700 mt-0.5">Necesitas subir el archivo <code class="bg-amber-100 px-1 rounded font-mono text-xs">google-credentials.json</code> al servidor y configurar el <strong>GA4 Property ID</strong> y <strong>Search Console URL</strong> en <a href="{{ route('admin.settings.index') }}" class="underline font-medium">Ajustes → SEO</a>.</p>
+            </div>
+        </div>
+        @endif
+    </div>
+
     {{-- Stats row --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         @php
