@@ -4,8 +4,16 @@
 <title>Tienda de Libros de Cocina | Marvin Baptista</title>
 <meta name="description" content="Descubre los mejores libros de cocina latinoamericana y mediterránea. Seleccionados con amor para llevar tu cocina al siguiente nivel.">
 <link rel="canonical" href="{{ route('store.index') }}">
+<meta property="og:type" content="website">
 <meta property="og:title" content="Tienda de Libros | Marvin Baptista">
+<meta property="og:description" content="Descubre los mejores libros de cocina latinoamericana y mediterránea. Seleccionados con amor para llevar tu cocina al siguiente nivel.">
 <meta property="og:url" content="{{ route('store.index') }}">
+<meta property="og:image" content="{{ $settings['default_og_image'] ?? asset('images/og-default.jpg') }}">
+<meta property="og:image:alt" content="Tienda de Libros de Cocina — Marvin Baptista">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tienda de Libros | Marvin Baptista">
+<meta name="twitter:description" content="Descubre los mejores libros de cocina latinoamericana y mediterránea. Seleccionados con amor para llevar tu cocina al siguiente nivel.">
+<meta name="twitter:image" content="{{ $settings['default_og_image'] ?? asset('images/og-default.jpg') }}">
 @endsection
 
 @section('content')
@@ -78,7 +86,7 @@
                 @if($book->author)
                 <p class="text-sm text-zinc-500">{{ $book->author }}</p>
                 @endif
-                <a href="{{ $book->amazon_url_mx ?? $book->amazon_url_us ?? '#' }}"
+                <a href="{{ $book->getAffiliateUrl('MX') }}"
                    target="_blank" rel="noopener noreferrer sponsored"
                    class="block w-full text-center py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-semibold transition-colors">
                     Ver en Amazon

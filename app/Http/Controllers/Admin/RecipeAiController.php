@@ -52,10 +52,20 @@ class RecipeAiController extends Controller
                 'suggested' => $result,
             ]);
         } catch (\RuntimeException $e) {
+            // "JSON malformado" is a model-quality issue, not a config issue — don't show settings link
+            $isConfigError = !str_contains($e->getMessage(), 'JSON') && !str_contains($e->getMessage(), 'inválida');
             return response()->json([
                 'error'      => $e->getMessage(),
-                'error_type' => 'config',
+                'error_type' => $isConfigError ? 'config' : 'server',
             ], 422);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $isTimeout = str_contains($e->getMessage(), 'timed out') || str_contains($e->getMessage(), 'cURL error 28');
+            return response()->json([
+                'error'      => $isTimeout
+                    ? 'La IA local tardó demasiado en responder (timeout). Prueba un modelo más ligero o aumenta el límite en Ajustes → IA → "Tiempo límite de respuesta".'
+                    : 'No se pudo conectar con la IA local. Verifica que el servidor esté corriendo en la URL configurada.',
+                'error_type' => 'server',
+            ], 504);
         } catch (\Exception $e) {
             report($e);
             $detail = app()->isLocal() ? ' Detalle: ' . $e->getMessage() : '';
@@ -64,6 +74,73 @@ class RecipeAiController extends Controller
                 'error_type' => 'server',
             ], 500);
         }
+    }
+
+    /* ─── Per-field AI enhancement ───────────────────────────────── */
+
+    /**
+     * Generate a single AI field for a recipe.
+     * Called in parallel from the frontend for each field — faster, debuggable.
+     */
+    public function enhanceField(Request $request, Recipe $recipe): JsonResponse
+    {
+        $allowed = ['seo_title', 'seo_description', 'story', 'tips_secrets',
+                    'faq', 'amazon_keywords', 'internal_link_suggestions'];
+
+        $request->validate([
+            'field' => ['required', 'string', 'in:' . implode(',', $allowed)],
+        ]);
+
+        $field = $request->string('field')->toString();
+
+        try {
+            $value   = $this->enhancer->enhanceSingleField($recipe, $field);
+            $current = $this->getCurrentFieldValue($recipe, $field);
+
+            return response()->json([
+                'success' => true,
+                'field'   => $field,
+                'value'   => $value,
+                'current' => $current,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success'    => false,
+                'field'      => $field,
+                'error'      => $e->getMessage(),
+                'error_type' => 'server',
+            ], 422);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            $isTimeout = str_contains($e->getMessage(), 'timed out') || str_contains($e->getMessage(), 'cURL error 28');
+            return response()->json([
+                'success'    => false,
+                'field'      => $field,
+                'error'      => $isTimeout
+                    ? 'Timeout al generar este campo. Prueba un modelo más ligero o aumenta el tiempo límite en Ajustes → IA.'
+                    : 'No se pudo conectar con la IA local para este campo.',
+                'error_type' => 'server',
+            ], 504);
+        } catch (\Exception $e) {
+            report($e);
+            return response()->json([
+                'success'    => false,
+                'field'      => $field,
+                'error'      => app()->isLocal() ? $e->getMessage() : 'Error inesperado al generar este campo.',
+                'error_type' => 'server',
+            ], 500);
+        }
+    }
+
+    private function getCurrentFieldValue(Recipe $recipe, string $field): mixed
+    {
+        return match ($field) {
+            'seo_title'       => $recipe->seo_title,
+            'seo_description' => $recipe->seo_description,
+            'story'           => $recipe->story,
+            'tips_secrets'    => $recipe->tips_secrets,
+            'faq'             => $recipe->faqs()->get(['question', 'answer'])->toArray(),
+            default           => null,
+        };
     }
 
     public function testApiKey(Request $request): JsonResponse
@@ -187,6 +264,29 @@ class RecipeAiController extends Controller
             report($e);
             return response()->json(['error' => 'Error al guardar las mejoras.'], 500);
         }
+    }
+
+    /**
+     * Build and return the full AI prompt for a recipe (no AI call).
+     * Lets the user copy it and paste it into ChatGPT / Claude / Gemini.
+     */
+    public function getPrompt(Recipe $recipe): JsonResponse
+    {
+        $recipe->load('ingredients', 'steps', 'categories', 'tags');
+
+        $prompt = $this->enhancer->buildUserPrompt($recipe);
+
+        $current = [
+            'seo_title'                 => $recipe->seo_title,
+            'seo_description'           => $recipe->seo_description,
+            'story'                     => $recipe->story,
+            'tips_secrets'              => $recipe->tips_secrets,
+            'faq'                       => $recipe->faqs()->get(['question', 'answer'])->toArray(),
+            'amazon_keywords'           => null,
+            'internal_link_suggestions' => null,
+        ];
+
+        return response()->json(['prompt' => $prompt, 'current' => $current]);
     }
 
     /**

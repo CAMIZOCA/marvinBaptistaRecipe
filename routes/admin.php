@@ -45,11 +45,15 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
 
         // AI Enhancement
         Route::post('/{recipe}/mejorar-ia', [RecipeAiController::class, 'enhance'])->name('ai.enhance');
+        Route::post('/{recipe}/mejorar-ia/campo', [RecipeAiController::class, 'enhanceField'])->name('ai.field');
         Route::post('/{recipe}/mejorar-ia/guardar', [RecipeAiController::class, 'saveEnhancement'])->name('ai.save');
+        Route::get('/{recipe}/mejorar-ia/prompt',  [RecipeAiController::class, 'getPrompt'])->name('ai.prompt');
 
-        // CSV Import
-        Route::get('/importar', [RecipeImportController::class, 'index'])->name('import.index');
-        Route::post('/importar', [RecipeImportController::class, 'store'])->name('import.store');
+        // CSV Import — 3-step flow: upload → preview/bulk-edit → confirm → progress
+        Route::get('/importar',              [RecipeImportController::class, 'index'])->name('import.index');
+        Route::post('/importar',             [RecipeImportController::class, 'store'])->name('import.store');
+        Route::get('/importar/preview',      [RecipeImportController::class, 'preview'])->name('import.preview');
+        Route::post('/importar/confirmar',   [RecipeImportController::class, 'confirm'])->name('import.confirm');
         Route::get('/importar/progreso/{batch}', [RecipeImportController::class, 'progress'])->name('import.progress');
     });
 
@@ -61,6 +65,7 @@ Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
 
     // Books
     Route::resource('libros', BookController::class)->parameters(['libros' => 'book']);
+    Route::patch('libros/{book}/toggle', [BookController::class, 'toggleActive'])->name('libros.toggle');
 
     // Ingredient Index
     Route::resource('ingredientes', IngredientAdminController::class)->parameters(['ingredientes' => 'ingredient']);

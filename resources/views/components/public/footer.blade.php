@@ -91,8 +91,8 @@
                     <li><a href="{{ route('page.show', 'sobre-mi') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Sobre Mí</a></li>
                     <li><a href="{{ route('store.index') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Tienda de Libros</a></li>
                     <li><a href="{{ route('page.show', 'contacto') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Contacto</a></li>
-                    <li><a href="{{ route('page.show', 'privacidad') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Privacidad</a></li>
-                    <li><a href="{{ route('page.show', 'cookies') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Política de Cookies</a></li>
+                    <li><a href="{{ route('page.show', 'politica-de-privacidad') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Privacidad</a></li>
+                    <li><a href="{{ route('page.show', 'politica-de-cookies') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Política de Cookies</a></li>
                     <li><a href="{{ route('page.show', 'aviso-legal') }}" class="text-sm text-zinc-400 hover:text-amber-400 transition-colors">Aviso Legal</a></li>
                 </ul>
             </div>
@@ -116,8 +116,8 @@
                 &copy; {{ date('Y') }} Marvin Baptista. Todos los derechos reservados.
             </p>
             <div class="flex items-center gap-4">
-                <a href="{{ route('page.show', 'privacidad') }}" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Privacidad</a>
-                <a href="{{ route('page.show', 'cookies') }}" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Cookies</a>
+                <a href="{{ route('page.show', 'politica-de-privacidad') }}" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Privacidad</a>
+                <a href="{{ route('page.show', 'politica-de-cookies') }}" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Cookies</a>
                 <a href="{{ route('page.show', 'aviso-legal') }}" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Términos</a>
             </div>
         </div>

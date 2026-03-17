@@ -2,7 +2,7 @@
 
 @section('seo_head')
 <title>{{ $book->title }} | Libros | Marvin Baptista</title>
-<meta name="description" content="{{ Str::limit($book->description ?? 'Libro de cocina recomendado por Marvin Baptista.', 160) }}">
+<meta name="description" content="{{ Str::limit(strip_tags($book->description ?? 'Libro de cocina recomendado por Marvin Baptista.'), 160) }}">
 <link rel="canonical" href="{{ route('store.show', $book->id) }}">
 <meta property="og:type" content="product">
 <meta property="og:title" content="{{ $book->title }}">
@@ -24,10 +24,10 @@
         <span class="text-zinc-800 font-medium line-clamp-1">{{ $book->title }}</span>
     </nav>
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-10 mb-14">
+    <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-10 mb-14 overflow-hidden">
 
         {{-- Book Cover --}}
-        <div class="lg:col-span-2 flex justify-center">
+        <div class="lg:col-span-2 flex justify-center min-w-0">
             <div class="relative">
                 @if($book->cover_image_url)
                 <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}"
@@ -44,7 +44,7 @@
         </div>
 
         {{-- Book Info --}}
-        <div class="lg:col-span-3 space-y-5">
+        <div class="lg:col-span-3 space-y-5 min-w-0">
             @if($book->cuisine_type)
             <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
                 {{ $book->cuisine_type }}
@@ -61,8 +61,17 @@
             @endif
 
             @if($book->description)
-            <div class="prose prose-zinc max-w-none leading-relaxed">
-                <p>{{ $book->description }}</p>
+            <div class="max-w-none text-zinc-700 leading-relaxed text-base
+                        [overflow-wrap:anywhere] [word-break:break-word]
+                        [&_p]:mb-3 [&_p:last-child]:mb-0
+                        [&_br]:block
+                        [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3
+                        [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3
+                        [&_li]:mb-1
+                        [&_strong]:font-semibold
+                        [&_em]:italic
+                        [&_a]:text-amber-600 [&_a]:underline [&_a:hover]:text-amber-500">
+                {!! $book->description !!}
             </div>
             @endif
 
@@ -71,7 +80,7 @@
                 <p class="text-sm font-semibold text-zinc-600 uppercase tracking-wider">Disponible en Amazon</p>
                 <div class="flex flex-wrap gap-3">
                     @if($book->amazon_url_mx)
-                    <a href="{{ $book->amazon_url_mx }}" target="_blank" rel="noopener noreferrer sponsored"
+                    <a href="{{ $book->getAffiliateUrl('MX') }}" target="_blank" rel="noopener noreferrer sponsored"
                        class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md">
                         🇲🇽 Amazon México
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +89,7 @@
                     </a>
                     @endif
                     @if($book->amazon_url_us)
-                    <a href="{{ $book->amazon_url_us }}" target="_blank" rel="noopener noreferrer sponsored"
+                    <a href="{{ $book->getAffiliateUrl('US') }}" target="_blank" rel="noopener noreferrer sponsored"
                        class="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md">
                         🇺🇸 Amazon EE.UU.
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,13 +98,13 @@
                     </a>
                     @endif
                     @if($book->amazon_url_es)
-                    <a href="{{ $book->amazon_url_es }}" target="_blank" rel="noopener noreferrer sponsored"
+                    <a href="{{ $book->getAffiliateUrl('ES') }}" target="_blank" rel="noopener noreferrer sponsored"
                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all">
                         🇪🇸 España
                     </a>
                     @endif
                     @if($book->amazon_url_ar)
-                    <a href="{{ $book->amazon_url_ar }}" target="_blank" rel="noopener noreferrer sponsored"
+                    <a href="{{ $book->getAffiliateUrl('AR') }}" target="_blank" rel="noopener noreferrer sponsored"
                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all">
                         🇦🇷 Argentina
                     </a>

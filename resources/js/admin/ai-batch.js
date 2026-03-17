@@ -27,12 +27,17 @@ const AiBatch = {
     async startBatch() {
         const ids = this.getSelectedIds();
         if (ids.length === 0) {
-            alert('Selecciona al menos una receta.');
+            alert('Selecciona al menos una receta usando los checkboxes.');
+            return;
+        }
+
+        if (!this.batchUrl) {
+            alert('Error de configuración: URL del endpoint no encontrada. Recarga la página.');
             return;
         }
 
         const confirmed = confirm(
-            `¿Mejorar ${ids.length} receta(s) con IA?\n\nLos campos SEO, historia y tips se actualizarán automáticamente.`
+            `¿Mejorar ${ids.length} receta(s) con IA?\n\nLos campos SEO, historia y tips se actualizarán automáticamente sin revisión.`
         );
         if (!confirmed) return;
 

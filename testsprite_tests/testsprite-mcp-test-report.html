@@ -1209,7 +1209,7 @@ body {
         <div class="metadata-container">
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Project Name</div>
-          <div class="metadata-value text-body">marvinbaptista</div>
+          <div class="metadata-value text-body">N/A</div>
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Date</div>
@@ -1238,18 +1238,13 @@ body {
             <li><span class="coverage-highlight">Key gaps / risks:</span>
             
               <ul>
-<li>No test plan supplied (or plan contained 0 cases). Create a valid test plan with concrete user flows to exercise routes and pages.</li>
-<li>Local server must be running and preferably in production mode for stable test execution.</li>
-<li>Recommendations:
-<ul>
-<li>Provide or generate a detailed test plan (examples: view recipe page, list recipes, view ingredient index, open store item).</li>
-<li>Re-run Testsprite after starting the app in production mode (build + serve) to enable full test execution.</li>
-<li>Optionally, allow Testsprite to generate a richer plan by invoking its plan generator or supplying a <code>testsprite_frontend_test_plan.json</code> with test entries.</li>
-</ul>
-</li>
+<li><strong>Servidor local inaccesible o mal configurado:</strong> Muchas pruebas fallaron porque las rutas devolvían 405/404. Verificar que el servidor Laravel esté levantado, escuche en el host/puerto correcto y que el <code>DocumentRoot</code> apunte a <code>public/</code>.</li>
+<li><strong>Hosts / URLs inconsistentes:</strong> Las pruebas usan <code>http://localhost:80/marvinbaptista/public/</code> y <code>http://marvinbaptista.test/</code> — confirme que las entradas de hosts/hosts local y configuración de Laragon apuntan correctamente.</li>
+<li><strong>Página por defecto de Laragon mostrada:</strong> Indica que el sitio no está siendo servido desde la ruta esperada.</li>
+<li><strong>Siguiente acción recomendada:</strong> Levantar <code>php artisan serve</code> o el servidor de producción, verificar <code>APP_URL</code> y el archivo hosts; reejecutar TestSprite.</li>
 </ul>
 <hr>
-<p>Report written to <code>testsprite_tests/testsprite-mcp-test-report.md</code> and raw output is available at <code>testsprite_tests/tmp/raw_report.md</code>.</p>
+<p>Informe generado automáticamente a partir de <code>testsprite_tests/tmp/test_results.json</code>.</p>
 
             </li>
 </ul>
@@ -1306,7 +1301,7 @@ body {
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Code Repo</div>
-          <div class="metadata-value text-body">marvinbaptista</div>
+          <div class="metadata-value text-body">N/A</div>
         </div>
         <div class="metadata-row">
           <div class="metadata-label text-body-medium">Test Results</div>

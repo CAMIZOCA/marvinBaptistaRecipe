@@ -67,6 +67,26 @@
             </div>
 
             <div class="space-y-5">
+                {{-- SEO / Content Analyzer --}}
+                <div id="seo-analyzer-panel" data-type="page" class="rounded-xl border border-zinc-600 overflow-hidden">
+                    <div id="seo-panel-header"
+                         class="px-4 py-3 flex items-center gap-2.5 bg-zinc-700/50 cursor-pointer select-none"
+                         onclick="(function(){var l=document.getElementById('seo-checks-list'),c=document.getElementById('seo-chevron');if(!l||!c)return;var h=l.classList.toggle('hidden');c.style.transform=h?'rotate(-90deg)':''})()">
+                        <div id="seo-traffic-light"
+                             class="w-3.5 h-3.5 rounded-full shrink-0 bg-zinc-600 transition-colors duration-300"></div>
+                        <span class="text-sm font-semibold text-zinc-200 flex-1">Análisis de contenido</span>
+                        <span id="seo-score-badge"
+                              class="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-700 text-zinc-400 tabular-nums">—</span>
+                        <svg id="seo-chevron" class="w-4 h-4 text-zinc-500 transition-transform duration-200 shrink-0"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                    <div id="seo-checks-list" class="p-3 space-y-0.5 bg-zinc-800/60">
+                        <p class="text-xs text-zinc-500 py-2 text-center">Analizando…</p>
+                    </div>
+                </div>
+
                 <div class="bg-zinc-800 rounded-xl border border-zinc-700 p-5 space-y-4">
                     <h2 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Publicación</h2>
 

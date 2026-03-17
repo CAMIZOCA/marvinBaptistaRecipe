@@ -324,6 +324,18 @@
                                    class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <p class="mt-1 text-xs text-zinc-500">La mayoría de servidores locales no requieren clave.</p>
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">
+                                Tiempo límite de respuesta
+                                <span class="text-zinc-500 font-normal">(segundos)</span>
+                            </label>
+                            <input type="number" name="settings[local_ai_timeout]" min="30" max="900" step="30"
+                                   value="{{ old('settings.local_ai_timeout', $settings['local_ai_timeout'] ?? 300) }}"
+                                   placeholder="300"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <p class="mt-1 text-xs text-zinc-500">Modelos grandes o razonamiento lento necesitan más tiempo. Por defecto 300 s (5 min).</p>
+                        </div>
                     </div>
                 </div>
 
@@ -343,6 +355,46 @@
                     <p class="text-xs text-zinc-500">Guarda primero, luego prueba la conexión.</p>
                 </div>
                 <div id="test-ai-result" class="hidden p-3 rounded-xl text-sm font-medium"></div>
+
+                {{-- ── Per-field prompt customisation ── --}}
+                <details class="border border-zinc-700 rounded-xl overflow-hidden group">
+                    <summary class="flex items-center justify-between px-4 py-3 bg-zinc-700/40
+                                    hover:bg-zinc-700/60 transition-colors cursor-pointer list-none select-none">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            <span class="text-sm font-semibold text-zinc-200">Personalizar instrucciones por campo</span>
+                            <span class="text-xs text-zinc-500 hidden sm:inline">(deja vacío para usar las instrucciones por defecto)</span>
+                        </div>
+                        <svg class="w-4 h-4 text-zinc-500 shrink-0 transition-transform group-open:rotate-180"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="p-4 space-y-4 bg-zinc-800/40 border-t border-zinc-700">
+                        <p class="text-xs text-zinc-500">
+                            Escribe instrucciones personalizadas para cada campo. La IA las usará en lugar de
+                            las instrucciones por defecto. Útil para adaptar el tono, la longitud o el estilo
+                            a tu marca. Deja el campo vacío para mantener el comportamiento por defecto.
+                        </p>
+                        @foreach([
+                            ['key' => 'ai_prompt_seo_title',       'label' => 'SEO Title',               'placeholder' => "- Máximo 60 caracteres exactos\n- Incluye la keyword principal\n- Formato: \"Receta de [Plato] [Beneficio]\""],
+                            ['key' => 'ai_prompt_seo_description',  'label' => 'SEO Description',         'placeholder' => "- Entre 140-155 caracteres\n- Keyword + beneficio + llamada a la acción"],
+                            ['key' => 'ai_prompt_story',             'label' => 'Historia / Introducción', 'placeholder' => "- Mínimo 500 palabras\n- Primera persona plural\n- Origen cultural documentable"],
+                            ['key' => 'ai_prompt_tips_secrets',      'label' => 'Trucos y Secretos',       'placeholder' => "- 6 consejos numerados\n- Incluye el porqué técnico de cada uno"],
+                            ['key' => 'ai_prompt_faq',               'label' => 'Preguntas Frecuentes',    'placeholder' => "- 4 objetos {question, answer}\n- Preguntas reales de búsqueda en Google"],
+                            ['key' => 'ai_prompt_amazon_keywords',   'label' => 'Keywords Amazon',         'placeholder' => "- 5 términos de búsqueda en Amazon\n- Solo texto plano, sin comillas"],
+                            ['key' => 'ai_prompt_internal_links',    'label' => 'Sugerencias de Links',    'placeholder' => "- 3 títulos de recetas relacionadas\n- Solo el nombre de la receta"],
+                        ] as $pf)
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">
+                                {{ $pf['label'] }}
+                            </label>
+                            <textarea name="settings[{{ $pf['key'] }}]" rows="3"
+                                      placeholder="{{ $pf['placeholder'] }}"
+                                      class="w-full px-3 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-600 text-xs font-mono resize-y focus:outline-none focus:ring-2 focus:ring-violet-500">{{ old('settings.'.$pf['key'], $settings[$pf['key']] ?? '') }}</textarea>
+                        </div>
+                        @endforeach
+                    </div>
+                </details>
 
                 {{-- Feature summary --}}
                 <div class="grid md:grid-cols-3 gap-3 pt-1">

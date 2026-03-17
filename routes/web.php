@@ -4,6 +4,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\NewsletterController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeListController;
@@ -18,6 +19,9 @@ Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
 
 // Home
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Newsletter
+Route::post('/newsletter', [NewsletterController::class, 'store'])->name('newsletter.subscribe');
 
 // Recipe listing & categories
 Route::get('/recetas', [RecipeListController::class, 'index'])->name('recipes.index');

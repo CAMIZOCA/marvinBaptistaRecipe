@@ -64,7 +64,7 @@ class RecipeController extends Controller
     public function store(RecipeRequest $request): RedirectResponse
     {
         $recipe = DB::transaction(function () use ($request) {
-            $data = $request->except(['categories', 'tags', 'ingredients', 'steps', 'faqs', 'primary_category']);
+            $data = $request->except(['categories', 'tags', 'ingredients', 'steps', 'faqs', 'primary_category', 'books']);
             $data['user_id'] = auth()->id();
             $data['is_published'] = $request->boolean('is_published');
 
@@ -95,7 +95,7 @@ class RecipeController extends Controller
     public function update(RecipeRequest $request, Recipe $recipe): RedirectResponse
     {
         DB::transaction(function () use ($request, $recipe) {
-            $data = $request->except(['categories', 'tags', 'ingredients', 'steps', 'faqs', 'primary_category']);
+            $data = $request->except(['categories', 'tags', 'ingredients', 'steps', 'faqs', 'primary_category', 'books']);
             $data['is_published'] = $request->boolean('is_published');
 
             if ($data['is_published'] && !$recipe->published_at && empty($data['published_at'])) {
@@ -107,7 +107,8 @@ class RecipeController extends Controller
         });
 
         // Invalidate cache
-        Cache::tags(['recipes'])->flush();
+        Cache::forget('recipes_home');
+        Cache::forget('recipe_page:' . ($recipe->slug ?? ''));
 
         return redirect()->route('admin.recipes.edit', $recipe)
             ->with('success', '¡Receta actualizada exitosamente!');
@@ -158,19 +159,19 @@ class RecipeController extends Controller
             ->with('success', $message ?? 'Operación completada.');
     }
 
-    public function togglePublished(Recipe $recipe): \Illuminate\Http\JsonResponse
+    public function togglePublished(Recipe $recipe): RedirectResponse
     {
         $recipe->update([
             'is_published' => !$recipe->is_published,
             'published_at' => !$recipe->is_published ? now() : $recipe->published_at,
         ]);
 
-        Cache::tags(['recipes'])->flush();
+        Cache::forget('recipes_home');
+        Cache::forget('recipe_page:' . ($recipe->slug ?? ''));
 
-        return response()->json([
-            'published' => $recipe->is_published,
-            'message' => $recipe->is_published ? 'Receta publicada.' : 'Receta despublicada.',
-        ]);
+        $msg = $recipe->is_published ? 'Receta publicada.' : 'Receta despublicada.';
+
+        return redirect()->back()->with('success', $msg);
     }
 
     // Handle image upload
@@ -245,5 +246,8 @@ class RecipeController extends Controller
                 ]);
             }
         }
+
+        // Books
+        $recipe->books()->sync($request->input('books', []));
     }
 }

@@ -450,12 +450,7 @@
             @php
                 // Choose affiliate URL by visitor country (header or default)
                 $visitorCountry = strtoupper(request()->header('CF-IPCountry', 'US'));
-                $bookUrl = match(true) {
-                    in_array($visitorCountry, ['EC','MX','CL','PE','CO','GT','HN','SV','CR','NI','PA','BO','PY','UY','VE','DO','CU','PR']) => $book->amazon_url_mx ?? $book->amazon_url_us,
-                    $visitorCountry === 'ES'  => $book->amazon_url_es ?? $book->amazon_url_us,
-                    $visitorCountry === 'AR'  => $book->amazon_url_ar ?? $book->amazon_url_us,
-                    default                   => $book->amazon_url_us,
-                } ?? $book->amazon_url_us ?? '#';
+                $bookUrl = $book->getAffiliateUrl($visitorCountry);
             @endphp
             <section id="libro-{{ $book->id }}" class="scroll-mt-20" aria-label="Libro recomendado">
                 <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 to-zinc-800 p-6">
@@ -491,7 +486,7 @@
                             <p class="text-sm text-zinc-400 mb-3">por <span class="text-zinc-300">{{ $book->author }}</span></p>
                             @endif
                             @if($book->description)
-                            <p class="text-sm text-zinc-400 leading-relaxed line-clamp-2 mb-4">{{ $book->description }}</p>
+                            <p class="text-sm text-zinc-400 leading-relaxed line-clamp-2 mb-4">{{ Str::limit(strip_tags($book->description), 180) }}</p>
                             @else
                             <p class="text-sm text-zinc-400 leading-relaxed mb-4">Este libro contiene esta y muchas más recetas auténticas. ¡Una adición imprescindible a tu colección de cocina!</p>
                             @endif

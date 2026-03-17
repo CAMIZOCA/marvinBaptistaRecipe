@@ -20,15 +20,16 @@ class RecipeEnhancer
             ? $this->callLocalAi($prompt)
             : $this->callAnthropic($prompt);
 
-        // Extract JSON if wrapped in markdown code blocks
-        if (preg_match('/```(?:json)?\s*([\s\S]*?)```/', $content, $matches)) {
-            $content = $matches[1];
-        }
+        $content = $this->extractJsonFromResponse($content);
 
         $result = json_decode(trim($content), true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('La IA devolvió una respuesta inválida. Por favor intenta nuevamente.');
+            // Fallback: try to rescue individual fields with regex (handles small-model malformed JSON)
+            $result = $this->fallbackExtract($content);
+            if (empty($result)) {
+                throw new \RuntimeException('La IA devolvió una respuesta inválida (JSON malformado). Intenta con un modelo más capaz o ajusta las instrucciones en Ajustes → IA.');
+            }
         }
 
         return $this->validateAndClean($result);
@@ -92,11 +93,13 @@ class RecipeEnhancer
             'Eres un experto consultor de SEO para blogs de cocina. Responde siempre en español con JSON válido.'
         );
 
+        $timeout = (int) Setting::get('local_ai_timeout', 300);
+
         $response = Http::withHeaders([
             'Content-Type'  => 'application/json',
             'Authorization' => 'Bearer ' . ($key ?: 'local'),
         ])
-        ->timeout(180)
+        ->timeout($timeout)
         ->post($url, [
             'model'    => $model,
             'stream'   => false,
@@ -123,9 +126,17 @@ class RecipeEnhancer
         $allowedFields = ['seo_title', 'seo_description', 'story', 'tips_secrets'];
         $updateData = [];
 
+        // Fields rendered inside a Trix (rich-text) editor — plain-text AI output
+        // (with \n line breaks) must be converted to HTML so Trix displays it correctly.
+        $richTextFields = ['story', 'tips_secrets'];
+
         foreach ($allowedFields as $field) {
             if (isset($fields[$field]) && $fields[$field]) {
-                $updateData[$field] = $fields[$field];
+                $value = $fields[$field];
+                if (in_array($field, $richTextFields)) {
+                    $value = $this->plainTextToHtml((string) $value);
+                }
+                $updateData[$field] = $value;
             }
         }
 
@@ -148,6 +159,48 @@ class RecipeEnhancer
         if (!empty($fields['amazon_keywords']) && is_array($fields['amazon_keywords'])) {
             $this->matchAmazonBooks($recipe, $fields['amazon_keywords']);
         }
+    }
+
+    /**
+     * Convert plain-text AI output to basic Trix-compatible HTML.
+     * - Double newlines  → paragraph breaks  (<div>…</div>)
+     * - Single newlines  → line breaks       (<br>)
+     * - Already-HTML content is returned as-is (detected by presence of tags).
+     */
+    private function plainTextToHtml(string $text): string
+    {
+        $text = trim($text);
+
+        // Already contains HTML tags → Trix can handle it directly
+        if ($text !== strip_tags($text)) {
+            return $text;
+        }
+
+        // Split on two or more consecutive newlines (paragraph breaks)
+        $paragraphs = preg_split('/\n{2,}/', $text, -1, PREG_SPLIT_NO_EMPTY);
+
+        if (empty($paragraphs)) {
+            return '<div>' . htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div>';
+        }
+
+        $html = '';
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if ($paragraph === '') continue;
+
+            // Escape each line individually, then join with <br>
+            $lines   = explode("\n", $paragraph);
+            $escaped = implode('<br>', array_map(
+                fn (string $l) => htmlspecialchars($l, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                $lines
+            ));
+
+            $html .= '<div>' . $escaped . '</div>';
+        }
+
+        return $html !== ''
+            ? $html
+            : '<div>' . htmlspecialchars($text, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</div>';
     }
 
     private function matchAmazonBooks(Recipe $recipe, array $keywords): void
@@ -179,7 +232,243 @@ class RecipeEnhancer
         $recipe->books()->sync($matchedBookIds);
     }
 
-    private function buildUserPrompt(Recipe $recipe): string
+    /* ─── Per-field AI call ───────────────────────────────────────── */
+
+    /**
+     * Generate a single AI field for a recipe.
+     * Each call uses a focused mini-prompt (shorter → faster + fewer JSON errors).
+     * Returns the cleaned, ready-to-use value (string, array, etc.).
+     */
+    public function enhanceSingleField(Recipe $recipe, string $field): mixed
+    {
+        $recipe->load('ingredients', 'steps', 'categories', 'tags');
+
+        $prompt   = $this->buildFieldPrompt($recipe, $field);
+        $provider = Setting::get('ai_provider', 'anthropic');
+
+        $content = $provider === 'local'
+            ? $this->callLocalAi($prompt)
+            : $this->callAnthropic($prompt);
+
+        $content = $this->extractJsonFromResponse($content);
+        $decoded = json_decode(trim($content), true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+            $decoded = $this->fallbackExtract($content);
+        }
+
+        if (empty($decoded) || !array_key_exists($field, $decoded)) {
+            throw new \RuntimeException(
+                "La IA no generó el campo «{$field}». Verifica que el modelo esté disponible e inténtalo de nuevo."
+            );
+        }
+
+        $cleaned = $this->validateAndClean($decoded);
+        return $cleaned[$field] ?? null;
+    }
+
+    /**
+     * Build a focused single-field prompt (much shorter than the full prompt,
+     * which makes small local models more reliable and faster).
+     */
+    private function buildFieldPrompt(Recipe $recipe, string $field): string
+    {
+        $context = $this->buildRecipeContext($recipe);
+
+        $labels = [
+            'seo_title'                 => 'el SEO title',
+            'seo_description'           => 'la SEO description',
+            'story'                     => 'la historia/introducción narrativa',
+            'tips_secrets'              => 'los trucos y secretos profesionales',
+            'faq'                       => 'las preguntas frecuentes (FAQ)',
+            'amazon_keywords'           => 'los keywords de Amazon',
+            'internal_link_suggestions' => 'las sugerencias de links internos',
+        ];
+
+        $instructions = [
+            'seo_title'                 => $this->fieldInstruction('seo_title', <<<'I'
+   - Máximo 60 caracteres exactos (cuenta los espacios)
+   - Incluye la keyword principal (nombre del plato)
+   - Formato: "Receta de [Plato] [Adjetivo o Beneficio]"
+   - NO dejes vacío. NO uses null.
+I),
+            'seo_description'           => $this->fieldInstruction('seo_description', <<<'I'
+   - Entre 140 y 155 caracteres exactos (cuenta los espacios)
+   - Incluye: keyword principal + beneficio concreto + llamada a la acción
+   - NO dejes vacío. NO uses null.
+I),
+            'story'                     => $this->fieldInstruction('story', <<<'I'
+   - Mínimo 400 palabras de narrativa fluida en español
+   - Estructura: enganche → origen cultural → evolución → invitación al lector
+   - Tono cálido, educativo, en primera persona plural
+I),
+            'tips_secrets'              => $this->fieldInstruction('tips_secrets', <<<'I'
+   - TIPO: string de texto plano (NO {}, NO [], es un string normal)
+   - Exactamente 6 consejos separados por \n, formato: "1. Consejo.\n2. ...\n6. ..."
+   - Incluye el porqué técnico de cada consejo
+I),
+            'faq'                       => $this->fieldInstruction('faq', <<<'I'
+   - Exactamente 4 preguntas reales que la gente busca en Google sobre este plato
+   - Respuestas de 2-3 oraciones informativas con variaciones de keyword
+I),
+            'amazon_keywords'           => $this->fieldInstruction('amazon_keywords', <<<'I'
+   - Exactamente 5 términos de búsqueda en Amazon para libros de cocina relacionados
+   - Texto plano sin comillas internas
+I),
+            'internal_link_suggestions' => $this->fieldInstruction('internal_links', <<<'I'
+   - Exactamente 3 títulos de recetas relacionadas que podrían existir en el blog
+   - Solo el nombre de la receta, sin caracteres especiales
+I),
+        ];
+
+        $schemas = [
+            'seo_title'                 => '{"seo_title": "El título SEO aquí, máximo 60 caracteres"}',
+            'seo_description'           => '{"seo_description": "La meta description aquí, entre 140-155 caracteres"}',
+            'story'                     => '{"story": "La historia narrativa larga aquí en un solo string"}',
+            'tips_secrets'              => '{"tips_secrets": "1. Consejo uno.\n2. Consejo dos.\n3. Tres.\n4. Cuatro.\n5. Cinco.\n6. Seis."}',
+            'faq'                       => "{\n  \"faq\": [\n    {\"question\": \"Pregunta 1\", \"answer\": \"Respuesta 1.\"},\n    {\"question\": \"Pregunta 2\", \"answer\": \"Respuesta 2.\"},\n    {\"question\": \"Pregunta 3\", \"answer\": \"Respuesta 3.\"},\n    {\"question\": \"Pregunta 4\", \"answer\": \"Respuesta 4.\"}\n  ]\n}",
+            'amazon_keywords'           => '{"amazon_keywords": ["keyword uno", "keyword dos", "keyword tres", "keyword cuatro", "keyword cinco"]}',
+            'internal_link_suggestions' => '{"internal_link_suggestions": ["Nombre Receta 1", "Nombre Receta 2", "Nombre Receta 3"]}',
+        ];
+
+        $label       = $labels[$field]       ?? $field;
+        $instruction = $instructions[$field] ?? '   - Genera el contenido apropiado para este campo.';
+        $schema      = $schemas[$field]      ?? '{"' . $field . '": "valor aquí"}';
+
+        return <<<PROMPT
+Genera ÚNICAMENTE {$label} para esta receta de cocina en español.
+
+=== DATOS DE LA RECETA ===
+{$context}
+
+=== INSTRUCCIÓN ===
+{$instruction}
+
+Responde SOLO con este JSON (nada más, sin texto adicional, sin bloques de código):
+{$schema}
+PROMPT;
+    }
+
+    /* ─── Full prompt (all fields at once) ───────────────────────── */
+
+    public function buildUserPrompt(Recipe $recipe): string
+    {
+        $context = $this->buildRecipeContext($recipe);
+
+        // Extract individual vars for the heredoc
+        $country    = trim($recipe->origin_country ?? 'desconocido');
+
+        // ── Per-field instructions (customisable from Admin → Ajustes → IA) ──
+        $instrSeoTitle = $this->fieldInstruction('seo_title', <<<'INSTR'
+   - Máximo 60 caracteres exactos, cuenta los espacios
+   - Incluye la keyword principal (nombre del plato)
+   - Formato preferido: "Receta de [Plato] [Adjetivo o Beneficio]"
+   - Ejemplo correcto: "Receta de Ceviche Peruano Auténtico: Fácil y Refrescante"
+   - NO uses null. NO dejes vacío.
+INSTR);
+
+        $instrSeoDesc = $this->fieldInstruction('seo_description', <<<INSTR
+   - Entre 140 y 155 caracteres exactos, cuenta los espacios
+   - Incluye: keyword principal + beneficio concreto + llamada a la acción
+   - Ejemplo correcto: "Aprende a preparar {$recipe->title} con esta receta tradicional de {$country}. Ingredientes sencillos, técnica de chef y sabor auténtico garantizado."
+   - NO uses null. NO dejes vacío. CUENTA los caracteres antes de responder.
+INSTR);
+
+        $instrStory = $this->fieldInstruction('story', <<<INSTR
+   - Mínimo 500 palabras, máximo 650 palabras
+   - Escrito en primera persona plural como chef con experiencia en {$country}
+   - Estructura: párrafo de enganche → origen histórico/cultural documentable → evolución del plato → significado en la gastronomía local → cómo lo descubrió el autor → invitación al lector
+   - Debe ser factualmente correcto: menciona regiones reales, épocas históricas aproximadas, técnicas tradicionales verificables
+   - Tono: cálido, apasionado, educativo; apto para alguien que prueba este plato por primera vez
+   - Estilo E-E-A-T: demuestra experiencia real, no genérica
+   - NO inventes datos históricos sin base. Si no tienes certeza, usa frases como "se cree que" o "según la tradición"
+   - Separa bien cada palabra. Usa comas, puntos y párrafos correctos.
+INSTR);
+
+        $instrTips = $this->fieldInstruction('tips_secrets', <<<'INSTR'
+   - TIPO: string de texto plano (NO uses {}, NO uses [], es un string normal)
+   - Escribe exactamente 6 consejos separados por \n, cada uno comenzando con "N. "
+   - Formato CORRECTO: "1. Consejo uno.\n2. Consejo dos.\n3. ...\n4. ...\n5. ...\n6. ..."
+   - Formato INCORRECTO: {"1": "consejo"} o ["consejo1", "consejo2"]
+   - Incluye el PORQUÉ técnico de cada consejo (ciencia de la cocina, textura, sabor)
+   - Separa bien las palabras. Ortografía española correcta.
+INSTR);
+
+        $instrFaq = $this->fieldInstruction('faq', <<<'INSTR'
+   - Exactamente 4 objetos {"question": "...", "answer": "..."}
+   - Las preguntas deben ser las que la gente REALMENTE busca en Google sobre este plato
+   - Respuestas de 2 a 3 oraciones completas, informativas, con autoridad
+   - Las respuestas deben añadir valor SEO con variaciones de keyword naturales
+INSTR);
+
+        $instrAmazon = $this->fieldInstruction('amazon_keywords', <<<INSTR
+   - Exactamente 5 strings de búsqueda en texto plano, sin comillas internas
+   - Deben ser términos reales que alguien usaría en Amazon para encontrar libros de cocina relacionados
+   - Ejemplos: "cocina peruana tradicional recetas", "libro recetas latinoamericanas", "gastronomia {$country} libro"
+INSTR);
+
+        $instrLinks = $this->fieldInstruction('internal_links', <<<'INSTR'
+   - Exactamente 3 títulos de recetas relacionadas que podrían existir en el blog
+   - Texto plano simple: solo el nombre de la receta sugerida, sin caracteres especiales, sin llaves, sin corchetes, sin símbolos
+   - Ejemplos correctos: "Ceviche de Camarones", "Tiradito de Salmón", "Leche de Tigre Clásica"
+   - Ejemplos INCORRECTOS: "{#}Título{#}", "[Receta]", "Receta: Nombre"
+INSTR);
+
+        return <<<PROMPT
+Analiza esta receta y genera contenido SEO de máxima calidad en español correcto y fluido.
+
+=== DATOS DE LA RECETA ===
+{$context}
+
+=== INSTRUCCIONES POR CAMPO ===
+
+1. seo_title (OBLIGATORIO):
+{$instrSeoTitle}
+
+2. seo_description (OBLIGATORIO):
+{$instrSeoDesc}
+
+3. story (OBLIGATORIO):
+{$instrStory}
+
+4. tips_secrets (OBLIGATORIO):
+{$instrTips}
+
+5. faq (OBLIGATORIO):
+{$instrFaq}
+
+6. amazon_keywords (OBLIGATORIO):
+{$instrAmazon}
+
+7. internal_link_suggestions (OBLIGATORIO):
+{$instrLinks}
+
+=== ESTRUCTURA JSON EXACTA ===
+Responde ÚNICAMENTE con este JSON (reemplaza los valores, no cambies las claves ni la estructura):
+
+{
+  "seo_title": "Texto de máximo 60 caracteres",
+  "seo_description": "Texto de entre 140 y 155 caracteres con keyword + beneficio + CTA",
+  "story": "Texto narrativo largo en un SOLO string de texto plano",
+  "tips_secrets": "1. Primer consejo con porqué técnico.\n2. Segundo consejo.\n3. Tercer consejo.\n4. Cuarto consejo.\n5. Quinto consejo.\n6. Sexto consejo.",
+  "faq": [
+    {"question": "Pregunta 1", "answer": "Respuesta informativa 1."},
+    {"question": "Pregunta 2", "answer": "Respuesta informativa 2."},
+    {"question": "Pregunta 3", "answer": "Respuesta informativa 3."},
+    {"question": "Pregunta 4", "answer": "Respuesta informativa 4."}
+  ],
+  "amazon_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
+  "internal_link_suggestions": ["Nombre Receta 1", "Nombre Receta 2", "Nombre Receta 3"]
+}
+
+CRÍTICO: tips_secrets es un STRING con \n entre consejos, NUNCA un objeto {} ni un array [].
+CRÍTICO: Devuelve SOLO el JSON. Sin texto antes, sin texto después, sin bloques de código.
+PROMPT;
+    }
+
+    /* ─── Recipe context builder (shared by full & per-field prompts) */
+
+    private function buildRecipeContext(Recipe $recipe): string
     {
         $ingredients = $recipe->ingredients->map(function ($ing) {
             $parts = [];
@@ -201,10 +490,7 @@ class RecipeEnhancer
         $difficulty = $recipe->difficulty ?? 'media';
         $prepTime   = ($recipe->prep_time_minutes ?? 0) + ($recipe->cook_time_minutes ?? 0);
 
-        return <<<PROMPT
-Analiza esta receta y genera contenido SEO de máxima calidad en español correcto y fluido.
-
-=== DATOS DE LA RECETA ===
+        return <<<CTX
 Título: {$recipe->title}
 Origen: {$origin}
 Categoría: {$category}
@@ -216,64 +502,116 @@ Ingredientes: {$ingredients}
 
 Preparación:
 {$steps}
+CTX;
+    }
 
-=== INSTRUCCIONES POR CAMPO ===
+    /* ─── JSON extraction (handles reasoning-model output) ───────── */
 
-1. seo_title (OBLIGATORIO):
-   - Máximo 60 caracteres exactos, cuenta los espacios
-   - Incluye la keyword principal (nombre del plato)
-   - Formato preferido: "Receta de [Plato] [Adjetivo o Beneficio]"
-   - Ejemplo correcto: "Receta de Ceviche Peruano Auténtico: Fácil y Refrescante"
-   - NO uses null. NO dejes vacío.
+    /**
+     * Strip <think> blocks (DeepSeek/QwQ reasoning models) and extract the
+     * first valid JSON object from the AI response, regardless of whether it
+     * is wrapped in a markdown code fence or not.
+     */
+    private function extractJsonFromResponse(string $content): string
+    {
+        // 1. Remove <think>...</think> reasoning blocks produced by DeepSeek, QwQ, Qwen-thinking…
+        $content = preg_replace('/<think>[\s\S]*?<\/think>/i', '', $content);
 
-2. seo_description (OBLIGATORIO):
-   - Entre 140 y 155 caracteres exactos, cuenta los espacios
-   - Incluye: keyword principal + beneficio concreto + llamada a la acción
-   - Ejemplo correcto: "Aprende a preparar {$recipe->title} con esta receta tradicional de {$country}. Ingredientes sencillos, técnica de chef y sabor auténtico garantizado."
-   - NO uses null. NO dejes vacío. CUENTA los caracteres antes de responder.
+        // 2. Try to extract from markdown code fences: ```json … ``` or ``` … ```
+        if (preg_match('/```(?:json)?\s*([\s\S]*?)```/s', $content, $matches)) {
+            $candidate = trim($matches[1]);
+            if (str_starts_with($candidate, '{')) {
+                return $candidate;
+            }
+        }
 
-3. story (OBLIGATORIO):
-   - Mínimo 500 palabras, máximo 650 palabras
-   - Escrito en primera persona plural como chef con experiencia en {$country}
-   - Estructura: párrafo de enganche → origen histórico/cultural documentable → evolución del plato → significado en la gastronomía local → cómo lo descubrió el autor → invitación al lector
-   - Debe ser factualmente correcto: menciona regiones reales, épocas históricas aproximadas, técnicas tradicionales verificables
-   - Tono: cálido, apasionado, educativo; apto para alguien que prueba este plato por primera vez
-   - Estilo E-E-A-T: demuestra experiencia real, no genérica
-   - NO inventes datos históricos sin base. Si no tienes certeza, usa frases como "se cree que" o "según la tradición"
-   - Separa bien cada palabra. Usa comas, puntos y párrafos correctos.
+        // 3. Find the outermost JSON object by scanning for first { and last }
+        $start = strpos($content, '{');
+        $end   = strrpos($content, '}');
+        if ($start !== false && $end !== false && $end > $start) {
+            return trim(substr($content, $start, $end - $start + 1));
+        }
 
-4. tips_secrets (OBLIGATORIO):
-   - Lista de exactamente 6 consejos profesionales específicos para ESTA receta
-   - Cada consejo en una línea nueva comenzando con número y punto: "1. Consejo aquí."
-   - Incluye el PORQUÉ técnico de cada consejo (ciencia de la cocina, textura, sabor)
-   - Ejemplos del estilo esperado:
-     "1. Usa ingrediente X porque la reacción química Y produce textura Z."
-     "2. Temperatura recomendada: explica el por qué."
-   - Separa bien las palabras. Ortografía española correcta.
+        return trim($content);
+    }
 
-5. faq (OBLIGATORIO):
-   - Exactamente 4 objetos {"question": "...", "answer": "..."}
-   - Las preguntas deben ser las que la gente REALMENTE busca en Google sobre este plato
-   - Respuestas de 2 a 3 oraciones completas, informativas, con autoridad
-   - Las respuestas deben añadir valor SEO con variaciones de keyword naturales
+    /* ─── Fallback field extraction (regex rescue for malformed JSON) ─ */
 
-6. amazon_keywords (OBLIGATORIO):
-   - Exactamente 5 strings de búsqueda en texto plano, sin comillas internas
-   - Deben ser términos reales que alguien usaría en Amazon para encontrar libros de cocina relacionados
-   - Ejemplos: "cocina peruana tradicional recetas", "libro recetas latinoamericanas", "gastronomia {$country} libro"
+    /**
+     * When json_decode fails entirely (common with small local models that
+     * generate structurally invalid JSON), attempt to extract individual
+     * field values using targeted regex patterns so we can still return
+     * partial results to the user.
+     */
+    private function fallbackExtract(string $raw): array
+    {
+        $result = [];
 
-7. internal_link_suggestions (OBLIGATORIO):
-   - Exactamente 3 títulos de recetas relacionadas que podrían existir en el blog
-   - Texto plano simple: solo el nombre de la receta sugerida, sin caracteres especiales, sin llaves, sin corchetes, sin símbolos
-   - Ejemplos correctos: "Ceviche de Camarones", "Tiradito de Salmón", "Leche de Tigre Clásica"
-   - Ejemplos INCORRECTOS: "{#}Título{#}", "[Receta]", "Receta: Nombre"
+        // ── Simple / long string fields ───────────────────────────────
+        foreach (['seo_title', 'seo_description', 'story'] as $field) {
+            if (preg_match('/"' . $field . '"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/s', $raw, $m)) {
+                $result[$field] = stripcslashes($m[1]);
+            }
+        }
 
-=== RECORDATORIO FINAL ===
-- Responde SOLO con el JSON. Ningún texto antes ni después.
-- Verifica que cada campo tenga contenido real antes de responder.
-- Verifica que las palabras estén bien separadas con espacios.
-- El JSON debe ser parseable sin errores.
-PROMPT;
+        // ── tips_secrets: string, OR malformed object/array fallback ──
+        if (preg_match('/"tips_secrets"\s*:\s*"((?:[^"\\\\]|\\\\.)*)"/s', $raw, $m)) {
+            $result['tips_secrets'] = stripcslashes($m[1]);
+        } elseif (preg_match('/"tips_secrets"\s*:\s*[\[{](.*?)[\]}]/s', $raw, $m)) {
+            // Model generated {} or [] instead of a string — extract all quoted values
+            preg_match_all('/"((?:[^"\\\\]|\\\\.)*)"/s', $m[1], $items);
+            $lines = array_values(array_filter($items[1], fn($s) => mb_strlen($s) > 3));
+            if ($lines) {
+                $result['tips_secrets'] = implode("\n", array_map(
+                    fn($i, $v) => (($i + 1) . '. ' . ltrim(preg_replace('/^\d+[\.\)]\s*/', '', $v))),
+                    array_keys($lines), $lines
+                ));
+            }
+        }
+
+        // ── faq: try json_decode on just the array literal ────────────
+        if (preg_match('/"faq"\s*:\s*(\[[\s\S]*?\])\s*[,}]/s', $raw, $m)) {
+            $faq = json_decode($m[1], true);
+            if (is_array($faq)) {
+                $result['faq'] = $faq;
+            }
+        }
+
+        // ── amazon_keywords: array of strings ────────────────────────
+        if (preg_match('/"amazon_keywords"\s*:\s*(\[[\s\S]*?\])\s*[,}]/s', $raw, $m)) {
+            $kw = json_decode($m[1], true);
+            if (is_array($kw)) {
+                $result['amazon_keywords'] = $kw;
+            } else {
+                preg_match_all('/"((?:[^"\\\\]|\\\\.)*)"/s', $m[1], $items);
+                $result['amazon_keywords'] = array_values(array_filter($items[1], fn($s) => mb_strlen($s) > 1));
+            }
+        }
+
+        // ── internal_link_suggestions ─────────────────────────────────
+        if (preg_match('/"internal_link_suggestions"\s*:\s*(\[[\s\S]*?\])\s*[,}]/s', $raw, $m)) {
+            $links = json_decode($m[1], true);
+            if (is_array($links)) {
+                $result['internal_link_suggestions'] = $links;
+            } else {
+                preg_match_all('/"((?:[^"\\\\]|\\\\.)*)"/s', $m[1], $items);
+                $result['internal_link_suggestions'] = array_values(array_filter($items[1], fn($s) => mb_strlen($s) > 1));
+            }
+        }
+
+        return $result;
+    }
+
+    /* ─── Per-field prompt helper ─────────────────────────────────── */
+
+    /**
+     * Returns a custom per-field instruction from the DB settings, falling back
+     * to the provided default when the setting is empty or not set.
+     */
+    private function fieldInstruction(string $field, string $default): string
+    {
+        $custom = Setting::get('ai_prompt_' . $field, '');
+        return trim($custom) ?: $default;
     }
 
     private function validateAndClean(array $data): array

@@ -24,11 +24,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var pageData   = document.querySelector('[data-enhance-url]');
     var enhanceUrl = enhanceBtn.dataset.enhanceUrl || (pageData && pageData.dataset.enhanceUrl) || '';
+    var fieldUrl   = (pageData && pageData.dataset.fieldUrl) || '';
     var saveUrl    = (saveBtn && saveBtn.dataset.saveUrl) || (pageData && pageData.dataset.saveUrl) || '';
     var testUrl    = (checkBtn && checkBtn.dataset.testUrl) || '';
+    var promptUrl  = (pageData && pageData.dataset.promptUrl) || '';
 
     // Store full suggested object for save step
     var _suggested = {};
+
+    // ── Copy-prompt modal elements ──────────────────────────────────
+    var promptModal            = document.getElementById('prompt-modal');
+    var promptModalClose       = document.getElementById('prompt-modal-close');
+    var promptModalCloseFooter = document.getElementById('prompt-modal-close-footer');
+    var promptModalLoading     = document.getElementById('prompt-modal-loading');
+    var promptModalContent     = document.getElementById('prompt-modal-content');
+    var promptModalFooter      = document.getElementById('prompt-modal-footer');
+    var promptTextArea         = document.getElementById('prompt-text-area');
+    var promptResponseArea     = document.getElementById('prompt-response-area');
+    var promptParseError       = document.getElementById('prompt-parse-error');
+    var clipboardCopyText      = document.getElementById('clipboard-copy-text');
+    var btnCopyPrompt          = document.getElementById('btn-copy-prompt');
+    var btnClipboardCopy       = document.getElementById('btn-clipboard-copy');
+    var btnApplyResponse       = document.getElementById('btn-apply-response');
+    // Holds current field values returned by the /prompt endpoint for the diff view
+    var _promptCurrent         = {};
+
+    // Fields dispatched as separate AI calls (order = display order in progress panel)
+    var FIELDS = [
+        { id: 'seo_title',                 label: 'SEO Title'               },
+        { id: 'seo_description',           label: 'SEO Description'         },
+        { id: 'story',                     label: 'Historia / Origen'       },
+        { id: 'tips_secrets',              label: 'Trucos y Secretos'       },
+        { id: 'faq',                       label: 'Preguntas Frecuentes'    },
+        { id: 'amazon_keywords',           label: 'Keywords Amazon'         },
+        { id: 'internal_link_suggestions', label: 'Sugerencias de Links'    },
+    ];
 
     /* ─── Status helpers ──────────────────────────────────────── */
 
@@ -77,6 +107,34 @@ document.addEventListener('DOMContentLoaded', function () {
         errorBox.classList.add('hidden');
         if (errorTitle)  errorTitle.textContent  = '';
         if (errorDetail) errorDetail.textContent = '';
+    }
+
+    /* ─── Copy-prompt modal helpers ───────────────────────────── */
+
+    function openPromptModal() {
+        if (!promptModal) return;
+        promptModal.classList.remove('hidden');
+        promptModal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePromptModal() {
+        if (!promptModal) return;
+        promptModal.classList.add('hidden');
+        promptModal.classList.remove('flex');
+        document.body.style.overflow = '';
+        // Reset state for next open
+        if (promptModalLoading) promptModalLoading.classList.remove('hidden');
+        if (promptModalContent) promptModalContent.classList.add('hidden');
+        if (promptModalFooter)  promptModalFooter.classList.add('hidden');
+        if (promptTextArea)     promptTextArea.value = '';
+        if (promptResponseArea) promptResponseArea.value = '';
+        if (promptParseError)   { promptParseError.classList.add('hidden'); promptParseError.textContent = ''; }
+        if (clipboardCopyText)  clipboardCopyText.textContent = 'Copiar al portapapeles';
+        if (btnClipboardCopy) {
+            btnClipboardCopy.classList.remove('bg-emerald-700', 'hover:bg-emerald-600');
+            btnClipboardCopy.classList.add('bg-violet-700', 'hover:bg-violet-600');
+        }
     }
 
     /* ─── Connection check ────────────────────────────────────── */
@@ -165,58 +223,52 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Step 2: call the enhance endpoint
-            if (btnText) btnText.textContent = 'Analizando con IA...';
+            // Step 2: process fields sequentially — local LLMs handle one request at a time
+            if (btnText) btnText.textContent = 'Generando campos...';
+            showProgressPanel();
 
-            fetch(enhanceUrl, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                body:    JSON.stringify({}),
-            })
-            .then(function (res) {
-                return res.json().then(function (data) { return { status: res.status, ok: res.ok, data: data }; });
-            })
-            .then(function (r) {
-                if (!r.ok) {
-                    var errType = r.data.error_type || 'server';
-                    var hints = {
-                        rate_limit: {
-                            title:  'Límite de solicitudes alcanzado',
-                            detail: r.data.error + (r.data.retry_in ? ' (' + Math.ceil(r.data.retry_in / 60) + ' min restantes)' : ''),
-                            link:   false,
-                        },
-                        config: {
-                            title:  'Error de configuración de la IA',
-                            detail: r.data.error,
-                            link:   true,
-                        },
-                        server: {
-                            title:  'Error en el servidor',
-                            detail: r.data.error || 'Ocurrió un error inesperado. Revisa los logs de Laravel (storage/logs).',
-                            link:   false,
-                        },
-                    };
-                    var h = hints[errType] || hints.server;
-                    setStatus('error', h.title);
-                    showError(h.title, h.detail, h.link);
+            var collectedSuggested = {};
+            var collectedCurrent   = {};
+
+            (async function () {
+                for (var i = 0; i < FIELDS.length; i++) {
+                    var f = FIELDS[i];
+                    if (btnText) btnText.textContent = 'Campo ' + (i + 1) + '/' + FIELDS.length + ': ' + f.label + '…';
+                    try {
+                        var res  = await fetch(fieldUrl, {
+                            method:  'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+                            body:    JSON.stringify({ field: f.id }),
+                        });
+                        var data = await res.json();
+                        if (res.ok && data.success) {
+                            collectedSuggested[data.field] = data.value;
+                            collectedCurrent[data.field]   = data.current;
+                            updateFieldProgress(f.id, 'ok');
+                        } else {
+                            updateFieldProgress(f.id, 'error', data.error || data.message || 'Error desconocido');
+                        }
+                    } catch (err) {
+                        updateFieldProgress(f.id, 'error', err.message);
+                    }
+                }
+
+                var ok = Object.keys(collectedSuggested).length;
+                if (ok === 0) {
+                    setStatus('error', 'No se generó ningún campo');
+                    showError(
+                        'No se pudo generar ningún campo',
+                        'Revisa los errores en la lista. Verifica que el modelo esté activo y el timeout sea suficiente.',
+                        false
+                    );
                     resetEnhanceBtn();
                     return;
                 }
-
-                setStatus('ok', 'Análisis completado ✓');
-                _suggested = r.data.suggested || {};
-                renderDiffView(r.data.suggested || {}, r.data.current || {});
+                setStatus('ok', ok + '/' + FIELDS.length + ' campos generados ✓');
+                _suggested = collectedSuggested;
+                renderDiffView(collectedSuggested, collectedCurrent);
                 resetEnhanceBtn();
-            })
-            .catch(function (err) {
-                setStatus('error', 'Error de red');
-                showError(
-                    'Error de red al contactar la IA',
-                    'No se recibió respuesta del servidor. Detalle: ' + err.message,
-                    false
-                );
-                resetEnhanceBtn();
-            });
+            })();
         });
     });
 
@@ -275,6 +327,56 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    /* ─── Per-field progress panel ────────────────────────────── */
+
+    function showProgressPanel() {
+        if (!diffFields || !diffContainer) return;
+        diffFields.innerHTML = FIELDS.map(function (f) {
+            return '<div class="flex items-center justify-between px-4 py-2.5 bg-zinc-800/60 rounded-xl border border-zinc-700/60">'
+                + '<span class="text-xs font-medium text-zinc-300">' + esc(f.label) + '</span>'
+                + '<span id="ai-prog-' + f.id + '" class="text-xs text-zinc-500 flex items-center gap-1.5 shrink-0">'
+                + '<svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">'
+                + '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>'
+                + '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>'
+                + '</svg>Generando…</span>'
+                + '</div>';
+        }).join('');
+        diffContainer.classList.remove('hidden');
+        diffContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function updateFieldProgress(fieldId, state, errorMsg) {
+        var el = document.getElementById('ai-prog-' + fieldId);
+        if (!el) return;
+        if (state === 'ok') {
+            el.innerHTML = '<svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>'
+                + '<span class="text-emerald-400">Listo</span>';
+        } else {
+            var short = (errorMsg || 'Error').substring(0, 55);
+            el.innerHTML = '<svg class="w-3.5 h-3.5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">'
+                + '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>'
+                + '<span class="text-red-400 max-w-[180px] truncate" title="' + esc(errorMsg || '') + '">' + esc(short) + '</span>';
+        }
+    }
+
+    /* ─── SEO Analyzer bridge ─────────────────────────────────── */
+
+    // Maps AI field names to the live form input selectors watched by seo-analyzer.js
+    var FIELD_DOM_MAP = {
+        seo_title:       '#seo_title',
+        seo_description: '#seo_description',
+    };
+
+    function applyToDOM(field, value) {
+        var sel = FIELD_DOM_MAP[field];
+        if (!sel) return;
+        var el = document.querySelector(sel);
+        if (!el) return;
+        el.value = value || '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
     /* ─── Render diff view ────────────────────────────────────── */
 
     function renderDiffView(suggested, current) {
@@ -317,6 +419,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<span class="text-xs font-medium text-zinc-300">Aceptar</span>' +
                 '</label>';
             item.appendChild(header);
+
+            // Real-time SEO preview: toggle the live form field when the checkbox changes
+            var cb = header.querySelector('.ai-field-accept');
+            if (cb && FIELD_DOM_MAP[field]) {
+                cb.addEventListener('change', function () {
+                    applyToDOM(field, this.checked ? (suggested[field] || '') : (current[field] || ''));
+                });
+            }
 
             var body = document.createElement('div');
             body.className = 'p-4 space-y-3';
@@ -388,6 +498,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         diffContainer.classList.remove('hidden');
         diffContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Push suggested values into the live form fields so the SEO Analyzer updates immediately
+        Object.keys(FIELD_DOM_MAP).forEach(function (field) {
+            if (suggested[field] !== undefined) {
+                applyToDOM(field, suggested[field]);
+            }
+        });
     }
 
     function esc(str) {
@@ -396,5 +513,139 @@ document.addEventListener('DOMContentLoaded', function () {
             .replace(/"/g, '&quot;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
+    }
+
+    /* ─── Copy-prompt modal: event listeners ──────────────────── */
+
+    // Open modal and fetch prompt from server
+    if (btnCopyPrompt) {
+        btnCopyPrompt.addEventListener('click', function () {
+            if (!promptUrl) {
+                showError('URL de prompt no configurada', 'Recarga la página e inténtalo de nuevo.', false);
+                return;
+            }
+            openPromptModal();
+            var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+            fetch(promptUrl, {
+                method:  'GET',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
+            })
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                _promptCurrent = data.current || {};
+                if (promptTextArea)     promptTextArea.value = data.prompt || '';
+                if (promptModalLoading) promptModalLoading.classList.add('hidden');
+                if (promptModalContent) promptModalContent.classList.remove('hidden');
+                if (promptModalFooter)  promptModalFooter.classList.remove('hidden');
+            })
+            .catch(function (err) {
+                closePromptModal();
+                showError('No se pudo construir el prompt', err.message, false);
+            });
+        });
+    }
+
+    // Close via X / Cancelar button
+    if (promptModalClose)       promptModalClose.addEventListener('click', closePromptModal);
+    if (promptModalCloseFooter) promptModalCloseFooter.addEventListener('click', closePromptModal);
+
+    // Close on ESC
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && promptModal && !promptModal.classList.contains('hidden')) {
+            closePromptModal();
+        }
+    });
+
+    // Close on backdrop click
+    if (promptModal) {
+        promptModal.addEventListener('click', function (e) {
+            if (e.target === promptModal) closePromptModal();
+        });
+    }
+
+    // Copy to clipboard
+    if (btnClipboardCopy) {
+        btnClipboardCopy.addEventListener('click', function () {
+            if (!promptTextArea || !promptTextArea.value) return;
+            var setOk = function () {
+                if (clipboardCopyText) clipboardCopyText.textContent = '¡Copiado!';
+                btnClipboardCopy.classList.remove('bg-violet-700', 'hover:bg-violet-600');
+                btnClipboardCopy.classList.add('bg-emerald-700', 'hover:bg-emerald-600');
+                setTimeout(function () {
+                    if (clipboardCopyText) clipboardCopyText.textContent = 'Copiar al portapapeles';
+                    btnClipboardCopy.classList.remove('bg-emerald-700', 'hover:bg-emerald-600');
+                    btnClipboardCopy.classList.add('bg-violet-700', 'hover:bg-violet-600');
+                }, 2000);
+            };
+            // Clipboard API requires HTTPS — fall back to execCommand on HTTP (local .test domains)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(promptTextArea.value)
+                    .then(setOk)
+                    .catch(function () {
+                        promptTextArea.select();
+                        document.execCommand('copy');
+                        setOk();
+                    });
+            } else {
+                promptTextArea.select();
+                document.execCommand('copy');
+                setOk();
+            }
+        });
+    }
+
+    // Apply pasted JSON response → renderDiffView (reuses the existing save flow)
+    if (btnApplyResponse) {
+        btnApplyResponse.addEventListener('click', function () {
+            var raw = (promptResponseArea ? promptResponseArea.value : '').trim();
+
+            var showParseErr = function (msg) {
+                if (promptParseError) {
+                    promptParseError.textContent = msg;
+                    promptParseError.classList.remove('hidden');
+                }
+            };
+
+            if (!raw) {
+                showParseErr('Pega la respuesta JSON de la IA antes de aplicar.');
+                return;
+            }
+
+            // Extract JSON — handles raw JSON, ```json fences, and leading/trailing text
+            // (mirrors server-side extractJsonFromResponse logic)
+            var jsonStr = raw;
+            var fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/s);
+            if (fence && fence[1].trim().startsWith('{')) {
+                jsonStr = fence[1].trim();
+            } else {
+                var s = raw.indexOf('{');
+                var e = raw.lastIndexOf('}');
+                if (s !== -1 && e > s) jsonStr = raw.substring(s, e + 1);
+            }
+
+            var parsed;
+            try {
+                parsed = JSON.parse(jsonStr);
+            } catch (err) {
+                showParseErr('JSON inválido: ' + err.message + '. Asegúrate de pegar solo el bloque JSON.');
+                return;
+            }
+
+            if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+                showParseErr('La respuesta debe ser un objeto JSON { }, no un array ni un valor simple.');
+                return;
+            }
+
+            // Clear inline error and connect to the existing diff + save flow
+            if (promptParseError) { promptParseError.classList.add('hidden'); promptParseError.textContent = ''; }
+
+            _suggested = parsed;                        // used by the save button handler
+            closePromptModal();
+            setStatus('ok', 'Respuesta aplicada — revisa y acepta los campos');
+            renderDiffView(parsed, _promptCurrent);     // same flow as the automated AI path
+        });
     }
 });

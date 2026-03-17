@@ -4,15 +4,20 @@
 
 @section('content')
 @php
-    $isEdit = isset($recipe) && $recipe->exists;
+    $isEdit     = isset($recipe) && $recipe->exists;
     $formAction = $isEdit ? route('admin.recipes.update', $recipe) : route('admin.recipes.store');
     $enhanceUrl = $isEdit ? route('admin.recipes.ai.enhance', $recipe) : null;
-    $saveAiUrl  = $isEdit ? route('admin.recipes.ai.save', $recipe) : null;
+    $fieldUrl   = $isEdit ? route('admin.recipes.ai.field',   $recipe) : null;
+    $saveAiUrl  = $isEdit ? route('admin.recipes.ai.save',    $recipe) : null;
+    $promptUrl  = $isEdit ? route('admin.recipes.ai.prompt',  $recipe) : null;
 @endphp
 
 <div class="p-6 space-y-4"
      data-enhance-url="{{ $enhanceUrl }}"
-     data-save-url="{{ $saveAiUrl }}">
+     data-field-url="{{ $fieldUrl }}"
+     data-save-url="{{ $saveAiUrl }}"
+     data-prompt-url="{{ $promptUrl }}"
+     data-analyzer-type="recipe">
 
     {{-- Header --}}
     <div class="flex items-center justify-between">
@@ -116,26 +121,44 @@
                             <trix-editor input="description" class="trix-content bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl min-h-32 focus:outline-none focus:ring-2 focus:ring-amber-500"></trix-editor>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Historia / Introducción</label>
-                            <input id="story" type="hidden" name="story" value="{{ old('story', $recipe->story ?? '') }}">
-                            <trix-editor input="story" class="trix-content bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl min-h-40 focus:outline-none focus:ring-2 focus:ring-amber-500"></trix-editor>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Historia / Introducción</label>
+                                <button type="button"
+                                        class="html-preview-toggle text-xs px-2.5 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg border border-zinc-600 transition-colors"
+                                        data-target="story">Vista previa</button>
+                            </div>
+                            <textarea id="story" name="story"
+                                      class="html-raw-editor w-full px-4 py-3 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl min-h-40 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-xs leading-relaxed resize-y"
+                                      placeholder="HTML de la historia / introducción..."
+                                      spellcheck="false">{{ old('story', $recipe->story ?? '') }}</textarea>
+                            <div id="story-preview"
+                                 class="html-preview-panel hidden mt-2 px-5 py-4 bg-zinc-900 border border-zinc-600 rounded-xl overflow-auto max-h-96"></div>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Trucos y Secretos</label>
-                            <input id="tips_secrets" type="hidden" name="tips_secrets" value="{{ old('tips_secrets', $recipe->tips_secrets ?? '') }}">
-                            <trix-editor input="tips_secrets" class="trix-content bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl min-h-32 focus:outline-none focus:ring-2 focus:ring-amber-500"></trix-editor>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider">Trucos y Secretos</label>
+                                <button type="button"
+                                        class="html-preview-toggle text-xs px-2.5 py-1 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg border border-zinc-600 transition-colors"
+                                        data-target="tips_secrets">Vista previa</button>
+                            </div>
+                            <textarea id="tips_secrets" name="tips_secrets"
+                                      class="html-raw-editor w-full px-4 py-3 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl min-h-32 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-xs leading-relaxed resize-y"
+                                      placeholder="HTML de trucos y secretos..."
+                                      spellcheck="false">{{ old('tips_secrets', $recipe->tips_secrets ?? '') }}</textarea>
+                            <div id="tips_secrets-preview"
+                                 class="html-preview-panel hidden mt-2 px-5 py-4 bg-zinc-900 border border-zinc-600 rounded-xl overflow-auto max-h-96"></div>
                         </div>
 
                         {{-- Times & Servings Row --}}
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div>
                                 <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Prep (min)</label>
-                                <input type="number" name="prep_time" value="{{ old('prep_time', $recipe->prep_time ?? '') }}" min="0"
+                                <input type="number" name="prep_time_minutes" value="{{ old('prep_time_minutes', $recipe->prep_time_minutes ?? '') }}" min="0"
                                        class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Cocción (min)</label>
-                                <input type="number" name="cook_time" value="{{ old('cook_time', $recipe->cook_time ?? '') }}" min="0"
+                                <input type="number" name="cook_time_minutes" value="{{ old('cook_time_minutes', $recipe->cook_time_minutes ?? '') }}" min="0"
                                        class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
                             </div>
                             <div>
@@ -148,9 +171,9 @@
                                 <select name="difficulty"
                                         class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
                                     <option value="">—</option>
-                                    <option value="facil" {{ old('difficulty', $recipe->difficulty ?? '') === 'facil' ? 'selected' : '' }}>Fácil</option>
-                                    <option value="media" {{ old('difficulty', $recipe->difficulty ?? '') === 'media' ? 'selected' : '' }}>Media</option>
-                                    <option value="dificil" {{ old('difficulty', $recipe->difficulty ?? '') === 'dificil' ? 'selected' : '' }}>Difícil</option>
+                                    <option value="easy" {{ old('difficulty', $recipe->difficulty ?? '') === 'easy' ? 'selected' : '' }}>Fácil</option>
+                                    <option value="medium" {{ old('difficulty', $recipe->difficulty ?? '') === 'medium' ? 'selected' : '' }}>Media</option>
+                                    <option value="hard" {{ old('difficulty', $recipe->difficulty ?? '') === 'hard' ? 'selected' : '' }}>Difícil</option>
                                 </select>
                             </div>
                         </div>
@@ -158,6 +181,22 @@
 
                     {{-- RIGHT SIDEBAR --}}
                     <div class="xl:w-80 p-6 space-y-5 bg-zinc-800/50">
+
+                        {{-- SEO & Content Analyzer --}}
+                        <div id="seo-analyzer-panel" data-type="recipe" class="rounded-xl border border-zinc-600 overflow-hidden">
+                            <div id="seo-panel-header"
+                                 class="px-4 py-3 flex items-center gap-2.5 bg-zinc-700/50 cursor-pointer select-none hover:bg-zinc-700/80 transition-colors">
+                                <div id="seo-traffic-light" class="w-3.5 h-3.5 rounded-full shrink-0 bg-zinc-600 transition-colors duration-300"></div>
+                                <span class="text-sm font-semibold text-zinc-200 flex-1">Análisis de contenido</span>
+                                <span id="seo-score-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-600 text-zinc-400">—</span>
+                                <svg id="seo-chevron" class="w-4 h-4 text-zinc-500 transition-transform duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                            <div id="seo-checks-list" class="p-3 space-y-0.5 bg-zinc-800/60">
+                                <p class="text-xs text-zinc-500 py-2 text-center">Analizando…</p>
+                            </div>
+                        </div>
 
                         {{-- Publish Card --}}
                         <div class="bg-zinc-700/50 rounded-xl p-4 border border-zinc-600 space-y-3">
@@ -187,9 +226,9 @@
                             <img src="{{ $recipe->featured_image }}" alt="Preview"
                                  class="w-full h-32 object-cover rounded-lg">
                             @endif
-                            <input type="url" name="featured_image"
+                            <input type="text" name="featured_image"
                                    value="{{ old('featured_image', $recipe->featured_image ?? '') }}"
-                                   placeholder="https://..."
+                                   placeholder="/storage/recipes/... o https://..."
                                    class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-300 rounded-lg text-sm placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500">
                             <div>
                                 <label class="block text-xs text-zinc-400 mb-1">Alt text imagen</label>
@@ -289,7 +328,7 @@
                     + Añadir Ingrediente
                 </button>
 
-                <textarea id="ingredients_json" name="ingredients_json" class="hidden">{{ old('ingredients_json', json_encode(
+                <textarea id="ingredients_json" name="ingredients" class="hidden">{{ old('ingredients', json_encode(
                     ($recipe->ingredients ?? collect())->map(fn($i) => [
                         'amount' => $i->amount,
                         'unit'   => $i->unit,
@@ -322,7 +361,7 @@
                     {{-- Steps rendered by JS --}}
                 </div>
 
-                <textarea id="steps_json" name="steps_json" class="hidden">{{ old('steps_json', json_encode($recipe->steps ?? [])) }}</textarea>
+                <textarea id="steps_json" name="steps" class="hidden">{{ old('steps', json_encode($recipe->steps ?? [])) }}</textarea>
 
                 <div id="steps-empty" class="text-center py-12 text-zinc-500">
                     <svg class="w-12 h-12 mx-auto mb-3 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -424,7 +463,7 @@
                     {{-- FAQ rows rendered by JS --}}
                 </div>
 
-                <textarea id="faqs_json" name="faqs_json" class="hidden">{{ old('faqs_json', json_encode($recipe->faqs ?? [])) }}</textarea>
+                <textarea id="faqs_json" name="faqs" class="hidden">{{ old('faqs', json_encode($recipe->faqs ?? [])) }}</textarea>
 
                 <div id="faq-empty" class="text-center py-10 text-zinc-500">
                     <p class="text-sm">No hay preguntas frecuentes todavía.</p>
@@ -530,6 +569,21 @@
                             <span id="ai-enhance-text">Mejorar con IA</span>
                         </button>
 
+                        {{-- Copy-prompt button (manual workflow: copy → paste in ChatGPT/Claude/Gemini) --}}
+                        @if($isEdit)
+                        <button type="button" id="btn-copy-prompt"
+                                class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5
+                                       bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-xl
+                                       font-medium text-sm transition-colors border border-zinc-600">
+                            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1
+                                         M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            Construir Prompt
+                        </button>
+                        @endif
+
                         {{-- AI Diff View --}}
                         <div id="ai-diff-container" class="hidden space-y-4">
                             <div class="text-xs font-semibold text-zinc-400 uppercase tracking-wider border-b border-zinc-600 pb-2">
@@ -582,6 +636,8 @@
                             </div>
                         </dl>
 
+                        </form>{{-- end form --}}
+
                         {{-- Danger Zone --}}
                         <div class="mt-6 p-4 bg-red-950/30 border border-red-900/50 rounded-xl">
                             <h4 class="text-sm font-semibold text-red-400 mb-3">Zona de peligro</h4>
@@ -601,9 +657,152 @@
                 </div>
             </div>
 
-        </form>{{-- end form --}}
     </div>
 </div>
+
+{{-- ==================== COPY-PROMPT MODAL ==================== --}}
+@if($isEdit)
+<div id="prompt-modal"
+     class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-labelledby="prompt-modal-title">
+
+    <div class="relative w-full max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl
+                flex flex-col max-h-[90vh] overflow-hidden">
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-700 shrink-0">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-violet-900/60 rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1
+                                 M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                </div>
+                <h2 id="prompt-modal-title" class="text-sm font-bold text-zinc-100">
+                    Prompt para ChatGPT / Claude / Gemini
+                </h2>
+            </div>
+            <button type="button" id="prompt-modal-close"
+                    class="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {{-- Scrollable body --}}
+        <div class="flex-1 overflow-y-auto p-5 space-y-5">
+
+            {{-- Loading state --}}
+            <div id="prompt-modal-loading" class="flex items-center justify-center gap-3 py-8">
+                <svg class="w-5 h-5 animate-spin text-violet-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <span class="text-sm text-zinc-400">Construyendo prompt…</span>
+            </div>
+
+            {{-- Content (hidden until loaded) --}}
+            <div id="prompt-modal-content" class="hidden space-y-5">
+
+                {{-- Step 1: Copy prompt --}}
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                            1. Copia este prompt
+                        </p>
+                        <button type="button" id="btn-clipboard-copy"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-700 hover:bg-violet-600
+                                       text-white rounded-lg text-xs font-medium transition-colors">
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1
+                                         M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <span id="clipboard-copy-text">Copiar al portapapeles</span>
+                        </button>
+                    </div>
+                    <textarea id="prompt-text-area" readonly rows="9"
+                              class="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-600 text-zinc-300 text-xs
+                                     rounded-xl resize-none font-mono leading-relaxed focus:outline-none
+                                     focus:ring-1 focus:ring-violet-500 cursor-text select-all"></textarea>
+                </div>
+
+                {{-- Step 2: Open AI tool --}}
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                        2. Pégalo en tu IA favorita
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="https://chat.openai.com/" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600
+                                  text-zinc-200 rounded-lg text-xs font-medium transition-colors border border-zinc-600">
+                            ChatGPT
+                            <svg class="w-3 h-3 shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                        <a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600
+                                  text-zinc-200 rounded-lg text-xs font-medium transition-colors border border-zinc-600">
+                            Claude
+                            <svg class="w-3 h-3 shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                        <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer"
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600
+                                  text-zinc-200 rounded-lg text-xs font-medium transition-colors border border-zinc-600">
+                            Gemini
+                            <svg class="w-3 h-3 shrink-0 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                {{-- Step 3: Paste the JSON response --}}
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                        3. Pega la respuesta JSON aquí
+                    </p>
+                    <textarea id="prompt-response-area" rows="6"
+                              placeholder='{"seo_title":"...","seo_description":"...","story":"...","tips_secrets":"...","faq":[...],"amazon_keywords":[...],"internal_link_suggestions":[...]}'
+                              class="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-600 text-zinc-300 text-xs
+                                     rounded-xl resize-y font-mono leading-relaxed focus:outline-none
+                                     focus:ring-1 focus:ring-emerald-500 placeholder-zinc-600"></textarea>
+                    <div id="prompt-parse-error"
+                         class="hidden rounded-lg border border-red-800/60 bg-red-950/40 px-3 py-2 text-xs text-red-300"></div>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Footer --}}
+        <div id="prompt-modal-footer"
+             class="hidden shrink-0 px-5 py-4 border-t border-zinc-700 flex items-center justify-between gap-3">
+            <button type="button" id="prompt-modal-close-footer"
+                    class="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm transition-colors">
+                Cancelar
+            </button>
+            <button type="button" id="btn-apply-response"
+                    class="inline-flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500
+                           text-white rounded-lg text-sm font-semibold transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                Aplicar respuesta
+            </button>
+        </div>
+
+    </div>
+</div>
+@endif
+
 @endsection
 
 @push('scripts')
@@ -618,4 +817,109 @@ window.recipeData = {
 </script>
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/trix@2.0.8/dist/trix.css">
 <script src="https://unpkg.com/trix@2.0.8/dist/trix.umd.min.js"></script>
+<script>
+/**
+ * Trix paste enhancement:
+ * When the user pastes PLAIN TEXT (no HTML in clipboard — e.g. from ChatGPT,
+ * a text editor, or a terminal), we intercept the native paste event and
+ * convert \n\n to paragraph breaks and \n to <br> so line structure is preserved.
+ *
+ * Pastes that already carry HTML (from a website or a word processor) are left
+ * to Trix's built-in handling (which keeps bold, lists, links, etc.).
+ */
+document.addEventListener('trix-initialize', function () {
+    document.querySelectorAll('trix-editor').forEach(function (trixEl) {
+        trixEl.addEventListener('paste', function (event) {
+            var cd = event.clipboardData || window.clipboardData;
+            if (!cd) return;
+
+            var types   = cd.types ? Array.from(cd.types) : [];
+            var hasHtml = types.includes('text/html');
+            var hasText = types.includes('text/plain');
+
+            // Only handle plain-text-only paste (no HTML version available)
+            if (!hasText || hasHtml) return;
+
+            event.preventDefault();
+
+            var text   = cd.getData('text/plain');
+            var editor = trixEl.editor;
+
+            // Escape a single text line for safe HTML insertion
+            function escLine(line) {
+                return line
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
+            // Double newlines → separate <div> blocks (Trix paragraphs)
+            // Single newlines → <br> within the same block
+            var html = text
+                .split(/\n{2,}/)
+                .filter(function (p) { return p.trim().length > 0; })
+                .map(function (p) {
+                    var lines = p.trim().split('\n').map(escLine);
+                    return '<div>' + lines.join('<br>') + '</div>';
+                })
+                .join('');
+
+            if (html) editor.insertHTML(html);
+        });
+    });
+});
+</script>
+<style>
+.html-raw-editor { tab-size: 2; -moz-tab-size: 2; }
+.html-preview-panel { color: #e4e4e7; line-height: 1.7; font-size: 0.9375rem; }
+.html-preview-panel p { margin-bottom: 0.875rem; }
+.html-preview-panel h1, .html-preview-panel h2, .html-preview-panel h3 { color: #f4f4f5; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+.html-preview-panel h1 { font-size: 1.25rem; }
+.html-preview-panel h2 { font-size: 1.125rem; border-bottom: 1px solid #3f3f46; padding-bottom: 0.25rem; }
+.html-preview-panel h3 { font-size: 1rem; }
+.html-preview-panel a { color: #f59e0b; text-decoration: underline; }
+.html-preview-panel ul { list-style: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+.html-preview-panel li { margin-bottom: 0.25rem; }
+.html-preview-panel nav.tabla-contenidos { background: rgba(39,39,42,0.8); border: 1px solid #3f3f46; border-left: 3px solid #f59e0b; padding: 0.875rem 1rem; border-radius: 0.5rem; margin: 1rem 0; }
+.html-preview-panel nav.tabla-contenidos h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: #71717a; margin: 0 0 0.5rem; border: none; padding: 0; }
+.html-preview-panel nav.tabla-contenidos ul { list-style: none; padding: 0; margin: 0; }
+.html-preview-panel nav.tabla-contenidos a { display: block; padding: 0.2rem 0; text-decoration: none; color: #f59e0b; }
+</style>
+<script>
+(function () {
+    'use strict';
+
+    document.querySelectorAll('.html-preview-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var targetId = btn.dataset.target;
+            var textarea = document.getElementById(targetId);
+            var preview  = document.getElementById(targetId + '-preview');
+            if (!textarea || !preview) return;
+
+            var isHidden = preview.classList.contains('hidden');
+            if (isHidden) {
+                preview.innerHTML = textarea.value;
+                preview.classList.remove('hidden');
+                btn.textContent = 'Ocultar previa';
+                btn.classList.add('bg-amber-600', 'border-amber-500', 'text-white');
+                btn.classList.remove('bg-zinc-700', 'text-zinc-300');
+            } else {
+                preview.classList.add('hidden');
+                btn.textContent = 'Vista previa';
+                btn.classList.remove('bg-amber-600', 'border-amber-500', 'text-white');
+                btn.classList.add('bg-zinc-700', 'text-zinc-300');
+            }
+        });
+    });
+
+    document.querySelectorAll('.html-raw-editor').forEach(function (textarea) {
+        textarea.addEventListener('input', function () {
+            var preview = document.getElementById(textarea.id + '-preview');
+            if (preview && !preview.classList.contains('hidden')) {
+                preview.innerHTML = textarea.value;
+            }
+        });
+    });
+}());
+</script>
 @endpush

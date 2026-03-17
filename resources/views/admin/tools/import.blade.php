@@ -137,7 +137,7 @@
     <div class="bg-zinc-800 rounded-xl border border-zinc-700 p-5 space-y-5" id="upload-section">
         <h2 class="text-sm font-semibold text-zinc-300">Subir Archivo CSV</h2>
 
-        <form id="import-form" class="space-y-4">
+        <form id="import-form" method="POST" action="{{ route('admin.recipes.import.store') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
 
             <div id="file-drop-zone"
@@ -263,62 +263,21 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Form submit via AJAX
+    // Form submit — native POST/redirect to preview page
     if (form) {
         form.addEventListener('submit', function (e) {
-            e.preventDefault();
-            errorDiv.classList.add('hidden');
-            errorDiv.textContent = '';
-
             if (!fileInput.files[0]) {
+                e.preventDefault();
                 errorDiv.textContent = 'Debes seleccionar un archivo CSV.';
                 errorDiv.classList.remove('hidden');
                 return;
             }
-
-            // Show spinner
+            // Show spinner while uploading (browser will navigate away)
             submitBtn.disabled = true;
             submitIcon.classList.add('hidden');
             submitSpinner.classList.remove('hidden');
             submitLabel.textContent = 'Subiendo archivo...';
-
-            var formData = new FormData(form);
-
-            fetch('{{ route('admin.recipes.import.store') }}', {
-                method: 'POST',
-                body: formData,
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            })
-            .then(function (res) {
-                return res.json().then(function (data) {
-                    return { ok: res.ok, data: data };
-                });
-            })
-            .then(function (result) {
-                if (!result.ok) {
-                    var msg = result.data.message || result.data.error || 'Error al iniciar la importación.';
-                    throw new Error(msg);
-                }
-
-                batchId = result.data.batch_id;
-                var total = result.data.total_recipes || '?';
-
-                // Hide form, show progress
-                document.getElementById('upload-section').classList.add('hidden');
-                progressContainer.classList.remove('hidden');
-                progressText.textContent = 'Importando ' + total + ' recetas...';
-                document.getElementById('import-total').textContent = total;
-
-                startPolling();
-            })
-            .catch(function (err) {
-                submitBtn.disabled = false;
-                submitIcon.classList.remove('hidden');
-                submitSpinner.classList.add('hidden');
-                submitLabel.textContent = 'Iniciar Importación';
-                errorDiv.textContent = err.message;
-                errorDiv.classList.remove('hidden');
-            });
+            // Let the browser submit normally (form has action + method set)
         });
     }
 

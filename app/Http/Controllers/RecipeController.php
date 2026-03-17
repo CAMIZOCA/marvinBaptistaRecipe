@@ -34,6 +34,11 @@ class RecipeController extends Controller
         // Increment view count asynchronously (non-blocking)
         dispatch(new IncrementRecipeViewCount($recipe->id));
 
+        // Guardar país de la última receta vista para recomendaciones de libros
+        if ($recipe->origin_country) {
+            session(['last_recipe_country' => $recipe->origin_country]);
+        }
+
         // Sidebar / mobile (3 from same category)
         $relatedRecipes = Recipe::published()
             ->whereHas('categories', function ($q) use ($recipe) {

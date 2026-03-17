@@ -8,6 +8,12 @@
 <meta property="og:title" content="Marvin Baptista | Recetas con Alma">
 <meta property="og:description" content="Descubre recetas auténticas latinoamericanas y mediterráneas con ingredientes frescos, tiempos exactos y fotos paso a paso.">
 <meta property="og:url" content="{{ route('home') }}">
+<meta property="og:image" content="{{ $settings['default_og_image'] ?? asset('images/og-default.jpg') }}">
+<meta property="og:image:alt" content="Marvin Baptista — Recetas de Latinoamérica y el Mediterráneo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Marvin Baptista | Recetas con Alma">
+<meta name="twitter:description" content="Descubre recetas auténticas latinoamericanas y mediterráneas con ingredientes frescos, tiempos exactos y fotos paso a paso.">
+<meta name="twitter:image" content="{{ $settings['default_og_image'] ?? asset('images/og-default.jpg') }}">
 <script type="application/ld+json">
 {
   "@@context": "https://schema.org",
@@ -406,40 +412,167 @@
 @endif
 
 {{-- ══════════════════════════════════════════════════════════
-     BOOK FEATURED — Tienda Amazon
+     BOOK CAROUSEL — Libros Recomendados
 ══════════════════════════════════════════════════════════ --}}
-@if(isset($featuredBook) && $featuredBook)
-<section class="py-16 bg-gradient-to-br from-zinc-900 to-zinc-800" aria-label="Libro recomendado">
+@if(isset($carouselBooks) && $carouselBooks->isNotEmpty())
+<section class="py-16 bg-gradient-to-br from-zinc-900 to-zinc-800" aria-label="Libros recomendados" id="book-carousel">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col lg:flex-row items-center gap-10">
-            @if($featuredBook->cover_image_url)
-            <div class="shrink-0">
-                <img src="{{ $featuredBook->cover_image_url }}" alt="{{ $featuredBook->title }}"
-                     class="w-40 lg:w-52 rounded-2xl shadow-2xl shadow-black/50">
+
+        {{-- Header --}}
+        <div class="text-center mb-10">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
+                📚 Libros Recomendados
+            </span>
+            <h2 class="text-2xl lg:text-3xl font-bold text-white">Para seguir cocinando</h2>
+        </div>
+
+        {{-- Carousel wrapper --}}
+        <div class="relative">
+
+            {{-- Track --}}
+            <div class="overflow-hidden">
+                <div id="book-carousel-track"
+                     class="flex transition-transform duration-500 ease-in-out"
+                     style="transform: translateX(0%);">
+                    @foreach($carouselBooks as $index => $book)
+                    <div class="w-full shrink-0 flex flex-col lg:flex-row items-center gap-10 lg:px-8"
+                         data-slide="{{ $index }}">
+                        @if($book->cover_image_url)
+                        <div class="shrink-0">
+                            <img src="{{ $book->cover_image_url }}"
+                                 alt="{{ $book->title }}"
+                                 class="w-40 lg:w-52 rounded-2xl shadow-2xl shadow-black/50"
+                                 loading="{{ $index === 0 ? 'eager' : 'lazy' }}">
+                        </div>
+                        @endif
+                        <div class="flex-1 text-center lg:text-left">
+                            <h3 class="text-2xl lg:text-3xl font-bold text-white mb-2">{{ $book->title }}</h3>
+                            @if($book->author)
+                            <p class="text-zinc-400 text-sm mb-4">
+                                Por <strong class="text-zinc-200">{{ $book->author }}</strong>
+                            </p>
+                            @endif
+                            @if($book->description)
+                            <p class="text-zinc-300 leading-relaxed mb-6">
+                                {{ Str::limit($book->description, 200) }}
+                            </p>
+                            @endif
+                            <a href="{{ route('store.show', $book) }}"
+                               class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5">
+                                Ver en Amazon
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            @if($carouselBooks->count() > 1)
+            {{-- Prev arrow --}}
+            <button id="book-carousel-prev"
+                    aria-label="Libro anterior"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 lg:-translate-x-5
+                           w-10 h-10 rounded-full bg-zinc-700 hover:bg-amber-500 text-white
+                           flex items-center justify-center shadow-lg transition-colors
+                           focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+
+            {{-- Next arrow --}}
+            <button id="book-carousel-next"
+                    aria-label="Libro siguiente"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 lg:translate-x-5
+                           w-10 h-10 rounded-full bg-zinc-700 hover:bg-amber-500 text-white
+                           flex items-center justify-center shadow-lg transition-colors
+                           focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+
+            {{-- Dot indicators --}}
+            <div class="flex justify-center gap-2 mt-8" id="book-carousel-dots" role="tablist" aria-label="Navegación de libros">
+                @foreach($carouselBooks as $index => $book)
+                <button role="tab"
+                        aria-selected="{{ $index === 0 ? 'true' : 'false' }}"
+                        aria-label="Libro {{ $index + 1 }}: {{ $book->title }}"
+                        data-dot="{{ $index }}"
+                        class="w-2.5 h-2.5 rounded-full transition-colors {{ $index === 0 ? 'bg-amber-500' : 'bg-zinc-600 hover:bg-zinc-400' }}">
+                </button>
+                @endforeach
             </div>
             @endif
-            <div class="flex-1 text-center lg:text-left">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider mb-4">
-                    📚 Libro Recomendado
-                </span>
-                <h2 class="text-2xl lg:text-3xl font-bold text-white mb-2">{{ $featuredBook->title }}</h2>
-                @if($featuredBook->author)
-                <p class="text-zinc-400 text-sm mb-4">Por <strong class="text-zinc-200">{{ $featuredBook->author }}</strong></p>
-                @endif
-                @if($featuredBook->description)
-                <p class="text-zinc-300 leading-relaxed mb-6">{{ Str::limit($featuredBook->description, 200) }}</p>
-                @endif
-                <a href="{{ route('store.show', $featuredBook->id) }}"
-                   class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5">
-                    Ver en Amazon
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                    </svg>
-                </a>
-            </div>
-        </div>
+
+        </div>{{-- /relative --}}
     </div>
 </section>
+
+@push('scripts')
+<script>
+(function () {
+    var section = document.getElementById('book-carousel');
+    if (!section) return;
+
+    var track   = document.getElementById('book-carousel-track');
+    var prevBtn = document.getElementById('book-carousel-prev');
+    var nextBtn = document.getElementById('book-carousel-next');
+    var dotsEl  = document.getElementById('book-carousel-dots');
+
+    if (!track) return;
+
+    var slides  = track.querySelectorAll('[data-slide]');
+    var total   = slides.length;
+    var current = 0;
+
+    if (total <= 1) return;
+
+    function goTo(index) {
+        current = (index + total) % total;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        if (dotsEl) {
+            dotsEl.querySelectorAll('[data-dot]').forEach(function (dot) {
+                var active = parseInt(dot.dataset.dot, 10) === current;
+                dot.classList.toggle('bg-amber-500', active);
+                dot.classList.toggle('bg-zinc-600', !active);
+                dot.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+        }
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', function () { goTo(current - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { goTo(current + 1); });
+
+    if (dotsEl) {
+        dotsEl.querySelectorAll('[data-dot]').forEach(function (dot) {
+            dot.addEventListener('click', function () { goTo(parseInt(dot.dataset.dot, 10)); });
+        });
+    }
+
+    // Swipe support
+    var touchStartX = 0;
+    track.addEventListener('touchstart', function (e) {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    track.addEventListener('touchend', function (e) {
+        var delta = touchStartX - e.changedTouches[0].screenX;
+        if (Math.abs(delta) > 50) goTo(delta > 0 ? current + 1 : current - 1);
+    }, { passive: true });
+
+    // Auto-advance (pausa en hover)
+    var timer = setInterval(function () { goTo(current + 1); }, 6000);
+    section.addEventListener('mouseenter', function () { clearInterval(timer); });
+    section.addEventListener('mouseleave', function () {
+        timer = setInterval(function () { goTo(current + 1); }, 6000);
+    });
+}());
+</script>
+@endpush
 @endif
 
 {{-- ══════════════════════════════════════════════════════════
@@ -459,16 +592,30 @@
         <p class="text-zinc-500 mb-8 leading-relaxed">
             Recibe cada semana las mejores recetas, consejos de cocina y los secretos que no están en el blog. Sin spam, solo buena comida.
         </p>
-        <form action="#" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            @csrf
-            <input type="email" name="email" required
-                   placeholder="tu@email.com"
-                   class="flex-1 px-5 py-3.5 rounded-xl border border-zinc-200 text-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent placeholder-zinc-400">
-            <button type="submit"
-                    class="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all hover:shadow-lg text-sm whitespace-nowrap">
-                Suscribirme
-            </button>
-        </form>
+        @if(session('newsletter_success'))
+            <div class="max-w-md mx-auto mb-6 px-5 py-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">
+                ✅ {{ session('newsletter_success') }}
+            </div>
+        @elseif(session('newsletter_info'))
+            <div class="max-w-md mx-auto mb-6 px-5 py-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
+                ℹ️ {{ session('newsletter_info') }}
+            </div>
+        @else
+            <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                @csrf
+                <input type="email" name="email" required
+                       placeholder="tu@email.com"
+                       value="{{ old('email') }}"
+                       class="flex-1 px-5 py-3.5 rounded-xl border @error('email') border-red-400 @else border-zinc-200 @enderror text-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent placeholder-zinc-400">
+                <button type="submit"
+                        class="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-xl transition-all hover:shadow-lg text-sm whitespace-nowrap">
+                    Suscribirme
+                </button>
+            </form>
+            @error('email')
+                <p class="text-xs text-red-500 mt-2">{{ $message }}</p>
+            @enderror
+        @endif
         <p class="text-xs text-zinc-400 mt-4">
             Sin spam. Cancela cuando quieras. Ya somos
             <strong class="text-zinc-600">{{ $totalRecipes ?? 0 }}+ recetas</strong> publicadas.

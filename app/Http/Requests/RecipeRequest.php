@@ -27,7 +27,7 @@ class RecipeRequest extends FormRequest
             'servings' => ['nullable', 'integer', 'min:1'],
             'servings_unit' => ['nullable', 'string', 'max:50'],
             'difficulty' => ['required', 'in:easy,medium,hard'],
-            'featured_image' => ['nullable', 'url', 'max:500'],
+            'featured_image' => ['nullable', 'string', 'max:500'],
             'image_alt' => ['nullable', 'string', 'max:255'],
             'video_url' => ['nullable', 'url', 'max:500'],
             'story' => ['nullable', 'string'],
@@ -47,6 +47,8 @@ class RecipeRequest extends FormRequest
             'ingredients' => ['nullable', 'string'], // JSON string
             'steps' => ['nullable', 'string'], // JSON string
             'faqs' => ['nullable', 'string'], // JSON string
+            'books'   => ['nullable', 'array'],
+            'books.*' => ['integer', 'exists:amazon_books,id'],
         ];
     }
 

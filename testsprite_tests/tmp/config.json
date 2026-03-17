@@ -9,12 +9,12 @@
     "projectName": "marvinbaptista",
     "projectPath": "d:\\laragon\\www\\marvinbaptista",
     "testIds": [],
-    "additionalInstruction": "Use the generated code_summary.yaml at testsprite_tests/tmp/code_summary.yaml; run backend tests for routes/pages.",
+    "additionalInstruction": "",
     "serverMode": "development",
     "envs": {
       "API_KEY": "sk-user-Ak1MbzLMN1NKaYLNbwN8LjPu4AlLN8x3-LKO8DCTltwoA-JJEg0mfwPb32aEMO0v_pEBlHHiU4wUztU9QxrkRRL3pX7_Vx80XTZ4NjImshRXiCHZNfmZn_CK5QacD6xGMj0"
     }
   },
-  "serverPort": 51749,
-  "proxy": "http://f21799a8-06b0-4325-bde3-282a907e8170:ap1gjVyxEVKsh6l3UZ1x5pDuY8JraJBa@tun.testsprite.com:8080"
+  "serverPort": 53166,
+  "proxy": "http://2930b405-720a-419d-b61d-99c70b2804d4:OctolYVc9RTKjwIoWXl0Y3PTI8M9rvWP@tun.testsprite.com:8080"
 }

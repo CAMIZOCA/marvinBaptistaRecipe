@@ -6,8 +6,8 @@
 @php
     $isEdit = isset($book) && $book->exists;
     $formAction = $isEdit
-        ? route('admin.libros.index').'/'.$book->id
-        : route('admin.libros.index');
+        ? route('admin.libros.update', $book)
+        : route('admin.libros.store');
 @endphp
 
 <div class="p-6 space-y-6 max-w-4xl">
@@ -40,7 +40,7 @@
         <p>El tag de afiliado de Amazon se configura en <a href="{{ route('admin.settings.index') }}" class="underline hover:text-blue-200">Ajustes → Amazon</a>. No es necesario incluirlo aquí en la URL.</p>
     </div>
 
-    <form method="POST" action="{{ $formAction }}" class="space-y-6">
+    <form id="book-form" method="POST" action="{{ $formAction }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
         @if($isEdit) @method('PUT') @endif
 
@@ -120,18 +120,37 @@
                 <div class="bg-zinc-800 rounded-xl border border-zinc-700 p-5 space-y-4">
                     <h2 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Imágenes y URLs</h2>
 
-                    @if(isset($book->cover_image_url) && $book->cover_image_url)
-                    <div class="flex justify-center">
-                        <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}"
+                    {{-- Cover preview --}}
+                    <div id="cover-preview-wrap" class="{{ (old('cover_image_url', $book->cover_image_url ?? '')) ? '' : 'hidden' }} flex justify-center">
+                        <img id="cover-preview"
+                             src="{{ old('cover_image_url', $book->cover_image_url ?? '') }}"
+                             alt="Portada"
                              class="max-h-40 object-contain rounded-lg shadow-lg">
                     </div>
-                    @endif
 
+                    {{-- File upload --}}
                     <div>
-                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">URL de Portada</label>
-                        <input type="url" name="cover_image_url" value="{{ old('cover_image_url', $book->cover_image_url ?? '') }}"
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Subir Portada</label>
+                        <label class="flex items-center gap-3 px-4 py-3 bg-zinc-700 border border-dashed border-zinc-500 rounded-xl cursor-pointer hover:border-amber-500 transition-colors group">
+                            <svg class="w-5 h-5 text-zinc-400 group-hover:text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span id="cover-file-label" class="text-sm text-zinc-400 group-hover:text-zinc-200 truncate">Seleccionar imagen (JPG, PNG, WebP — máx. 3 MB)</span>
+                            <input type="file" name="cover_image" accept="image/*" class="sr-only" id="cover-file-input">
+                        </label>
+                        @error('cover_image')
+                        <p class="text-xs text-red-400 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- URL manual --}}
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">O ingresar URL de Portada</label>
+                        <input type="text" name="cover_image_url" id="cover-url-input"
+                               value="{{ old('cover_image_url', $book->cover_image_url ?? '') }}"
                                placeholder="https://..."
                                class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm">
+                        <p class="text-xs text-zinc-500 mt-1">Si subes un archivo, éste tiene prioridad sobre la URL.</p>
                     </div>
 
                     <div class="space-y-3">
@@ -154,14 +173,92 @@
                     </div>
                 </div>
 
-                <div class="bg-zinc-800 rounded-xl border border-zinc-700 p-5 space-y-4">
+                <div class="bg-zinc-800 rounded-xl border border-zinc-700 p-5 space-y-3">
                     <h2 class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Descripción</h2>
-                    <textarea name="description" rows="6"
-                              placeholder="Descripción del libro..."
-                              class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none">{{ old('description', $book->description ?? '') }}</textarea>
+
+                    {{-- Quill editor container --}}
+                    <div id="quill-editor"
+                         class="bg-zinc-700 rounded-xl text-zinc-200 min-h-[160px]"
+                         style="font-size:0.875rem; line-height:1.6">
+                    </div>
+
+                    {{-- Hidden input that carries the HTML to the server --}}
+                    <input type="hidden" name="description" id="description-input">
+
+                    <p class="text-xs text-zinc-500">Soporta negritas, cursiva, listas y enlaces.</p>
                 </div>
             </div>
         </div>
+
+        {{-- Quill WYSIWYG --}}
+        <link href="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.snow.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/quill@2/dist/quill.js"></script>
+        <style>
+            #quill-editor .ql-toolbar { background:#3f3f46; border-color:#52525b; border-radius:0.75rem 0.75rem 0 0; }
+            #quill-editor .ql-container { border-color:#52525b; border-radius:0 0 0.75rem 0.75rem; min-height:140px; }
+            #quill-editor .ql-editor { color:#e4e4e7; min-height:140px; }
+            #quill-editor .ql-editor.ql-blank::before { color:#71717a; font-style:normal; }
+            #quill-editor .ql-stroke { stroke:#a1a1aa !important; }
+            #quill-editor .ql-fill  { fill:#a1a1aa !important; }
+            #quill-editor .ql-picker-label { color:#a1a1aa; }
+            #quill-editor button:hover .ql-stroke,
+            #quill-editor button.ql-active .ql-stroke { stroke:#f59e0b !important; }
+            #quill-editor button:hover .ql-fill,
+            #quill-editor button.ql-active .ql-fill { fill:#f59e0b !important; }
+        </style>
+        <script>
+            (function () {
+                const quill = new Quill('#quill-editor', {
+                    theme: 'snow',
+                    placeholder: 'Descripción del libro...',
+                    modules: {
+                        toolbar: [
+                            ['bold', 'italic', 'underline'],
+                            [{ list: 'ordered' }, { list: 'bullet' }],
+                            ['link'],
+                            ['clean']
+                        ]
+                    }
+                });
+
+                // Pre-load existing content
+                const existing = @json(old('description', $book->description ?? ''));
+                if (existing) quill.root.innerHTML = existing;
+
+                // Before submit: copy editor HTML to hidden input
+                document.getElementById('book-form').addEventListener('submit', function () {
+                    document.getElementById('description-input').value = quill.getSemanticHTML();
+                });
+            })();
+        </script>
+
+        {{-- URL preview update --}}
+        <script>
+            const fileInput = document.getElementById('cover-file-input');
+            const urlInput  = document.getElementById('cover-url-input');
+            const preview   = document.getElementById('cover-preview');
+            const previewWrap = document.getElementById('cover-preview-wrap');
+            const fileLabel = document.getElementById('cover-file-label');
+
+            fileInput.addEventListener('change', function () {
+                const file = this.files[0];
+                if (!file) return;
+                fileLabel.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = e => {
+                    preview.src = e.target.result;
+                    previewWrap.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            });
+
+            urlInput.addEventListener('input', function () {
+                if (!fileInput.files.length && this.value) {
+                    preview.src = this.value;
+                    previewWrap.classList.remove('hidden');
+                }
+            });
+        </script>
 
         <div class="flex items-center gap-3 pt-2">
             <button type="submit"

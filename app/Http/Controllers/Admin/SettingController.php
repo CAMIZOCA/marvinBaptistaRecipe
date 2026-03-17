@@ -46,6 +46,16 @@ class SettingController extends Controller
         'local_ai_url'            => 'ai',
         'local_ai_model'          => 'ai',
         'local_ai_api_key'        => 'ai',
+        'local_ai_timeout'        => 'ai',
+
+        // Per-field prompt customisation (optional overrides — empty = use default)
+        'ai_prompt_seo_title'        => 'ai',
+        'ai_prompt_seo_description'  => 'ai',
+        'ai_prompt_story'            => 'ai',
+        'ai_prompt_tips_secrets'     => 'ai',
+        'ai_prompt_faq'              => 'ai',
+        'ai_prompt_amazon_keywords'  => 'ai',
+        'ai_prompt_internal_links'   => 'ai',
     ];
 
     public function index(): View
