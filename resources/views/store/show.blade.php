@@ -113,44 +113,14 @@ $bookBreadcrumb = [
 
             {{-- Affiliate CTA --}}
             <div class="space-y-3 pt-4">
-                <p class="text-sm font-semibold text-zinc-600 uppercase tracking-wider">Disponible en Amazon</p>
-                <div class="flex flex-wrap gap-3">
-                    @if($book->amazon_url_mx)
-                    <a href="{{ $book->getAffiliateUrl('MX') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md"
-                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - MX" data-ga-item-id="{{ $book->asin }}">
-                        🇲🇽 Amazon México
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                    </a>
-                    @endif
-                    @if($book->amazon_url_us)
-                    <a href="{{ $book->getAffiliateUrl('US') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md"
-                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - US" data-ga-item-id="{{ $book->asin }}">
-                        🇺🇸 Amazon EE.UU.
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                        </svg>
-                    </a>
-                    @endif
-                    @if($book->amazon_url_es)
-                    <a href="{{ $book->getAffiliateUrl('ES') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all"
-                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - ES" data-ga-item-id="{{ $book->asin }}">
-                        🇪🇸 España
-                    </a>
-                    @endif
-                    @if($book->amazon_url_ar)
-                    <a href="{{ $book->getAffiliateUrl('AR') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all"
-                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - AR" data-ga-item-id="{{ $book->asin }}">
-                        🇦🇷 Argentina
-                    </a>
-                    @endif
-                </div>
-
+                <a href="{{ $book->getAffiliateUrl('US') }}" target="_blank" rel="noopener noreferrer sponsored"
+                   class="inline-flex items-center gap-2 px-7 py-3.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-semibold text-base transition-all hover:shadow-md"
+                   data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }}" data-ga-item-id="{{ $book->asin }}">
+                    Ver en Amazon
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                </a>
                 <p class="text-xs text-zinc-400 italic leading-relaxed">
                     Como afiliado de Amazon, recibo una pequeña comisión por las compras realizadas a través de estos enlaces, sin costo adicional para ti.
                 </p>

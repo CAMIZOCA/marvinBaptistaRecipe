@@ -87,7 +87,7 @@
                 @if($book->author)
                 <p class="text-sm text-zinc-500">{{ $book->author }}</p>
                 @endif
-                <a href="{{ $book->getAffiliateUrl('MX') }}"
+                <a href="{{ $book->getAffiliateUrl('US') }}"
                    target="_blank" rel="noopener noreferrer sponsored"
                    class="block w-full text-center py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-semibold transition-colors"
                    data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }}" data-ga-item-id="{{ $book->asin }}">
