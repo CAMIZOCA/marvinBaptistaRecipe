@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AmazonBook;
 use App\Models\Category;
 use App\Models\IngredientIndex;
 use App\Models\Recipe;
@@ -18,8 +19,9 @@ class SitemapController extends Controller
 
         $categories = Category::select('slug', 'updated_at')->get();
         $ingredients = IngredientIndex::select('slug', 'updated_at')->get();
+        $books = AmazonBook::select('slug', 'updated_at')->latest('updated_at')->get();
 
-        $content = view('sitemap.index', compact('recipes', 'categories', 'ingredients'))->render();
+        $content = view('sitemap.index', compact('recipes', 'categories', 'ingredients', 'books'))->render();
 
         return response($content, 200)
             ->header('Content-Type', 'application/xml');

@@ -56,7 +56,7 @@
     {{-- Books --}}
     @foreach($books ?? [] as $book)
     <url>
-        <loc>{{ route('store.show', $book->id) }}</loc>
+        <loc>{{ route('store.show', $book->slug) }}</loc>
         <lastmod>{{ $book->updated_at->format('Y-m-d') }}</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>
