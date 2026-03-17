@@ -1,0 +1,55 @@
+{
+  "resources/css/admin.css": {
+    "file": "assets/admin-mhRMrM_F.css",
+    "src": "resources/css/admin.css",
+    "isEntry": true,
+    "name": "admin",
+    "names": [
+      "admin.css"
+    ]
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-xB7FYfx6.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/admin/app.js": {
+    "file": "assets/app-BYovx0BW.js",
+    "name": "app",
+    "src": "resources/js/admin/app.js",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-8ZPLKifK.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/modules/serving-adjuster.js",
+      "resources/js/modules/ingredient-checkboxes.js",
+      "resources/js/modules/step-timer.js"
+    ]
+  },
+  "resources/js/modules/ingredient-checkboxes.js": {
+    "file": "assets/ingredient-checkboxes-C4UntL2V.js",
+    "name": "ingredient-checkboxes",
+    "src": "resources/js/modules/ingredient-checkboxes.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/modules/serving-adjuster.js": {
+    "file": "assets/serving-adjuster-BM3MNhnP.js",
+    "name": "serving-adjuster",
+    "src": "resources/js/modules/serving-adjuster.js",
+    "isDynamicEntry": true
+  },
+  "resources/js/modules/step-timer.js": {
+    "file": "assets/step-timer-BaNp4QqP.js",
+    "name": "step-timer",
+    "src": "resources/js/modules/step-timer.js",
+    "isDynamicEntry": true
+  }
+}
