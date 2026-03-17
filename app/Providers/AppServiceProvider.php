@@ -30,13 +30,14 @@ class AppServiceProvider extends ServiceProvider
                         ->filter(fn($c) => $c->recipes_count > 0)
                         ->values(),
                     'settings' => [
-                        'social_instagram'     => Setting::get('social_instagram', ''),
-                        'social_youtube'       => Setting::get('social_youtube', ''),
-                        'social_pinterest'     => Setting::get('social_pinterest', ''),
-                        'social_facebook'      => Setting::get('social_facebook', ''),
-                        'google_analytics_id'  => Setting::get('google_analytics_id', ''),
-                        'default_og_image'     => Setting::get('default_og_image', ''),
-                        'affiliate_disclaimer' => Setting::get('affiliate_disclaimer', 'Como afiliado de Amazon, recibo una pequeña comisión por las compras realizadas a través de mis enlaces, sin costo adicional para ti. Esto me ayuda a mantener el sitio.'),
+                        'social_instagram'      => Setting::get('social_instagram', ''),
+                        'social_youtube'        => Setting::get('social_youtube', ''),
+                        'social_pinterest'      => Setting::get('social_pinterest', ''),
+                        'social_facebook'       => Setting::get('social_facebook', ''),
+                        'google_analytics_id'   => Setting::get('google_analytics_id', ''),
+                        'google_search_console' => Setting::get('google_search_console', ''),
+                        'default_og_image'      => Setting::get('default_og_image', ''),
+                        'affiliate_disclaimer'  => Setting::get('affiliate_disclaimer', 'Como afiliado de Amazon, recibo una pequeña comisión por las compras realizadas a través de mis enlaces, sin costo adicional para ti. Esto me ayuda a mantener el sitio.'),
                     ],
                 ];
             }
