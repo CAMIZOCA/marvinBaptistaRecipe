@@ -294,12 +294,14 @@
                          data-base-servings="{{ $recipe->servings }}">
                         <button type="button" id="servings-minus"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-zinc-600 hover:text-zinc-900 font-bold transition-colors"
+                                data-ga-event="serving_adjust" data-ga-category="recipe_interaction" data-ga-label="{{ $recipe->title }}"
                                 aria-label="Reducir porciones">−</button>
                         <span class="text-sm font-semibold text-zinc-700 min-w-[80px] text-center">
                             <span id="servings-display">{{ $recipe->servings }}</span> porciones
                         </span>
                         <button type="button" id="servings-plus"
                                 class="w-8 h-8 flex items-center justify-center rounded-lg bg-white shadow-sm text-zinc-600 hover:text-zinc-900 font-bold transition-colors"
+                                data-ga-event="serving_adjust" data-ga-category="recipe_interaction" data-ga-label="{{ $recipe->title }}"
                                 aria-label="Aumentar porciones">+</button>
                     </div>
                     @endif
@@ -375,6 +377,7 @@
                                 <button type="button"
                                         class="step-timer-btn inline-flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-sm font-medium transition-colors"
                                         data-duration="{{ $step->duration_minutes * 60 }}"
+                                        data-ga-event="timer_start" data-ga-category="recipe_interaction" data-ga-label="{{ $recipe->title }} - {{ $step->duration_minutes }}min"
                                         aria-label="Iniciar temporizador de {{ $step->duration_minutes }} minutos">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -396,7 +399,8 @@
             @if($recipe->tips_secrets)
             <section class="scroll-mt-20">
                 <details class="bg-amber-50 border border-amber-100 rounded-2xl overflow-hidden group">
-                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none">
+                    <summary class="flex items-center justify-between p-5 cursor-pointer list-none"
+                             data-ga-event="tips_open" data-ga-category="recipe_interaction" data-ga-label="{{ $recipe->title }}">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 bg-amber-200 rounded-lg flex items-center justify-center">
                                 <svg class="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -770,3 +774,46 @@
 
 </article>
 @endsection
+
+@push('scripts')
+<script>
+/* ── Contexto de receta en dataLayer ────────────────────────────────────────
+   Permite segmentar todos los eventos de esta sesión por receta/categoría
+   en GA4 → Exploración → Dimensiones personalizadas
+   ──────────────────────────────────────────────────────────────────────── */
+window.dataLayer = window.dataLayer || [];
+window.dataLayer.push({
+    event:           'recipe_view',
+    recipe_title:    '{{ addslashes($recipe->title) }}',
+    recipe_category: '{{ addslashes($recipe->categories?->first()?->name ?? '') }}',
+    recipe_cuisine:  '{{ addslashes($recipe->origin_country ?? '') }}',
+    recipe_time:     {{ $totalTime }},
+    recipe_servings: {{ $recipe->servings ?? 0 }}
+});
+
+/* ── Scroll depth: secciones clave de la receta ─────────────────────────────
+   Dispara section_view cuando el usuario llega a Ingredientes y Preparación.
+   Usa IntersectionObserver para no penalizar el rendimiento.
+   ──────────────────────────────────────────────────────────────────────── */
+(function() {
+    if (!window.IntersectionObserver) return;
+    var tracked = {};
+    ['#ingredientes', '#preparacion', '#faq'].forEach(function(sel) {
+        var el = document.querySelector(sel);
+        if (!el) return;
+        new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting && !tracked[sel]) {
+                    tracked[sel] = true;
+                    if (window._ga) window._ga.push('section_view', {
+                        event_category: 'scroll',
+                        event_label:    sel.replace('#', ''),
+                        recipe_title:   '{{ addslashes($recipe->title) }}'
+                    });
+                }
+            });
+        }, { threshold: 0.3 }).observe(el);
+    });
+}());
+</script>
+@endpush

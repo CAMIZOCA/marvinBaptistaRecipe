@@ -59,7 +59,8 @@
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         @foreach($books as $book)
         <article class="bg-white rounded-2xl border border-zinc-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group">
-            <a href="{{ route('store.show', $book->slug) }}" class="block">
+            <a href="{{ route('store.show', $book->slug) }}" class="block"
+               data-ga-event="book_card_click" data-ga-category="store" data-ga-label="{{ $book->title }}" data-ga-item-id="{{ $book->asin }}">
                 <div class="aspect-[3/4] bg-zinc-50 flex items-center justify-center p-4 overflow-hidden">
                     @if($book->cover_image_url)
                     <img src="{{ $book->cover_image_url }}" alt="{{ $book->title }}"
@@ -88,7 +89,8 @@
                 @endif
                 <a href="{{ $book->getAffiliateUrl('MX') }}"
                    target="_blank" rel="noopener noreferrer sponsored"
-                   class="block w-full text-center py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-semibold transition-colors">
+                   class="block w-full text-center py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-sm font-semibold transition-colors"
+                   data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }}" data-ga-item-id="{{ $book->asin }}">
                     Ver en Amazon
                 </a>
             </div>

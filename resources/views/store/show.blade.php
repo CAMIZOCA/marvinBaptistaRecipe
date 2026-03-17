@@ -6,10 +6,46 @@
 <link rel="canonical" href="{{ route('store.show', $book->id) }}">
 <meta property="og:type" content="product">
 <meta property="og:title" content="{{ $book->title }}">
+<meta property="og:description" content="{{ Str::limit(strip_tags($book->description ?? 'Libro de cocina recomendado por Marvin Baptista.'), 160) }}">
 <meta property="og:url" content="{{ route('store.show', $book->id) }}">
+<meta property="og:site_name" content="Marvin Baptista">
 @if($book->cover_image_url)
 <meta property="og:image" content="{{ $book->cover_image_url }}">
+<meta property="og:image:alt" content="{{ $book->title }}">
 @endif
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ $book->title }}">
+<meta name="twitter:description" content="{{ Str::limit(strip_tags($book->description ?? ''), 160) }}">
+@if($book->cover_image_url)
+<meta name="twitter:image" content="{{ $book->cover_image_url }}">
+@endif
+@endsection
+
+@section('schema_org')
+@php
+$bookSchema = [
+    '@context'    => 'https://schema.org',
+    '@type'       => 'Book',
+    'name'        => $book->title,
+    'author'      => ['@type' => 'Person', 'name' => $book->author ?? 'Desconocido'],
+    'description' => Str::limit(strip_tags($book->description ?? ''), 300),
+    'url'         => route('store.show', $book->id),
+];
+if ($book->cover_image_url) $bookSchema['image'] = $book->cover_image_url;
+if ($book->asin)            $bookSchema['isbn']  = $book->asin;
+
+$bookBreadcrumb = [
+    '@context' => 'https://schema.org',
+    '@type'    => 'BreadcrumbList',
+    'itemListElement' => [
+        ['@type' => 'ListItem', 'position' => 1, 'name' => 'Inicio', 'item' => route('home')],
+        ['@type' => 'ListItem', 'position' => 2, 'name' => 'Tienda', 'item' => route('store.index')],
+        ['@type' => 'ListItem', 'position' => 3, 'name' => $book->title, 'item' => route('store.show', $book->id)],
+    ],
+];
+@endphp
+<script type="application/ld+json">{!! json_encode($bookSchema, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>
+<script type="application/ld+json">{!! json_encode($bookBreadcrumb, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) !!}</script>
 @endsection
 
 @section('content')
@@ -81,7 +117,8 @@
                 <div class="flex flex-wrap gap-3">
                     @if($book->amazon_url_mx)
                     <a href="{{ $book->getAffiliateUrl('MX') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md">
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md"
+                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - MX" data-ga-item-id="{{ $book->asin }}">
                         🇲🇽 Amazon México
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -90,7 +127,8 @@
                     @endif
                     @if($book->amazon_url_us)
                     <a href="{{ $book->getAffiliateUrl('US') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md">
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-semibold text-sm transition-all hover:shadow-md"
+                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - US" data-ga-item-id="{{ $book->asin }}">
                         🇺🇸 Amazon EE.UU.
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -99,13 +137,15 @@
                     @endif
                     @if($book->amazon_url_es)
                     <a href="{{ $book->getAffiliateUrl('ES') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all">
+                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all"
+                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - ES" data-ga-item-id="{{ $book->asin }}">
                         🇪🇸 España
                     </a>
                     @endif
                     @if($book->amazon_url_ar)
                     <a href="{{ $book->getAffiliateUrl('AR') }}" target="_blank" rel="noopener noreferrer sponsored"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all">
+                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-xl font-medium text-sm transition-all"
+                       data-ga-event="book_cta_click" data-ga-category="affiliate" data-ga-label="{{ $book->title }} - AR" data-ga-item-id="{{ $book->asin }}">
                         🇦🇷 Argentina
                     </a>
                     @endif
@@ -149,3 +189,19 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+/* ── view_item: evento GA4 Ecommerce para libros ────────────────────────────
+   Permite rastrear qué libros se consultan y correlacionar con clics de CTA
+   ──────────────────────────────────────────────────────────────────────── */
+window.dataLayer = window.dataLayer || [];
+window.dataLayer.push({
+    event:         'view_item',
+    item_id:       '{{ $book->asin }}',
+    item_name:     '{{ addslashes($book->title) }}',
+    item_category: '{{ addslashes($book->cuisine_type ?? '') }}',
+    item_brand:    '{{ addslashes($book->author ?? '') }}'
+});
+</script>
+@endpush

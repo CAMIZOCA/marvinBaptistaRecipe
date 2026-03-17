@@ -183,7 +183,8 @@
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             @foreach($quickRecipes as $recipe)
             <a href="{{ route('recipe.show', $recipe->slug) }}"
-               class="group flex items-center gap-3 bg-white rounded-2xl p-4 border border-amber-100 hover:border-amber-300 hover:shadow-md transition-all">
+               class="group flex items-center gap-3 bg-white rounded-2xl p-4 border border-amber-100 hover:border-amber-300 hover:shadow-md transition-all"
+               data-ga-event="recipe_card_click" data-ga-category="home_section" data-ga-label="rapidas - {{ $recipe->title }}">
                 <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-amber-100">
                     @if($recipe->featured_image)
                     <img src="{{ $recipe->featured_image }}" alt="{{ $recipe->title }}"
@@ -227,7 +228,8 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             @foreach($featuredCategories as $cat)
             <a href="{{ route('category.show', $cat->slug) }}"
-               class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 aspect-[4/3] flex flex-col justify-end p-5 hover:shadow-xl transition-all hover:-translate-y-1">
+               class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 aspect-[4/3] flex flex-col justify-end p-5 hover:shadow-xl transition-all hover:-translate-y-1"
+               data-ga-event="category_click" data-ga-category="navigation" data-ga-label="{{ $cat->name }}">
                 {{-- Background subtle pattern --}}
                 @php
                     $catColors = [
@@ -358,7 +360,8 @@
         <div class="space-y-4">
             @foreach($latestRecipes as $recipe)
             <a href="{{ route('recipe.show', $recipe->slug) }}"
-               class="group flex items-center gap-6 bg-white rounded-2xl p-4 border border-zinc-100 hover:border-amber-200 hover:shadow-md transition-all">
+               class="group flex items-center gap-6 bg-white rounded-2xl p-4 border border-zinc-100 hover:border-amber-200 hover:shadow-md transition-all"
+               data-ga-event="recipe_card_click" data-ga-category="home_section" data-ga-label="ultimas - {{ $recipe->title }}">
 
                 {{-- Imagen --}}
                 <div class="w-28 h-20 rounded-xl overflow-hidden shrink-0 bg-zinc-100">
@@ -601,7 +604,7 @@
                 ℹ️ {{ session('newsletter_info') }}
             </div>
         @else
-            <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+            <form action="{{ route('newsletter.subscribe') }}" method="POST" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto" id="newsletter-form">
                 @csrf
                 <input type="email" name="email" required
                        placeholder="tu@email.com"
@@ -651,3 +654,25 @@
 </section>
 
 @endsection
+
+@push('scripts')
+<script>
+/* ── Contexto de home en dataLayer ──────────────────────────────────────── */
+window.dataLayer = window.dataLayer || [];
+window.dataLayer.push({
+    event:         'home_view',
+    total_recipes: {{ $totalRecipes ?? 0 }}
+});
+
+/* ── Newsletter: registra el intento de suscripción ─────────────────────── */
+var nlForm = document.getElementById('newsletter-form');
+if (nlForm) {
+    nlForm.addEventListener('submit', function() {
+        if (window._ga) window._ga.push('newsletter_signup', {
+            event_category: 'conversion',
+            event_label:    'home'
+        });
+    });
+}
+</script>
+@endpush

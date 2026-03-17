@@ -13,6 +13,14 @@
     <meta name="description" content="Recetas con sabor a Latinoamérica y el Mediterráneo">
     @endif
 
+    {{-- og:locale global (español) --}}
+    <meta property="og:locale" content="es_ES">
+
+    {{-- Google Search Console verification (configurado en Ajustes → SEO) --}}
+    @if(!empty($settings['google_search_console']))
+    <meta name="google-site-verification" content="{{ $settings['google_search_console'] }}">
+    @endif
+
     {{-- Favicon --}}
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -27,15 +35,58 @@
 
     @yield('schema_org')
 
-    {{-- Google Analytics 4 (solo si está configurado) --}}
+    {{-- Google Analytics 4 (solo si está configurado en Ajustes → SEO) --}}
     @php $gaId = $settings['google_analytics_id'] ?? null; @endphp
     @if($gaId)
     <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
     <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', '{{ $gaId }}');
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', '{{ $gaId }}', {
+        send_page_view: true,
+        cookie_flags: 'SameSite=None;Secure'
+    });
+
+    /* ── Helper global de analytics ─────────────────────────────────────────
+       Uso: window._ga.push('nombre_evento', { param: 'valor' })
+       → envía a GA4 Y empuja al dataLayer (compatible con GTM en el futuro)
+       ──────────────────────────────────────────────────────────────────── */
+    window._ga = {
+        push: function(name, params) {
+            var p = params || {};
+            if (typeof gtag === 'function') gtag('event', name, p);
+            window.dataLayer.push(Object.assign({ event: name }, p));
+        }
+    };
+
+    /* ── Tracking declarativo por atributo data-ga-event ────────────────────
+       Agrega  data-ga-event="nombre"  a cualquier elemento HTML para que
+       cada clic dispare automáticamente el evento en GA4.
+       Parámetros opcionales: data-ga-category  data-ga-label  data-ga-value
+       ──────────────────────────────────────────────────────────────────── */
+    document.addEventListener('click', function(e) {
+        var el = e.target.closest('[data-ga-event]');
+        if (!el) return;
+        var p = { event_category: el.dataset.gaCategory || 'engagement' };
+        if (el.dataset.gaLabel)  p.event_label = el.dataset.gaLabel;
+        if (el.dataset.gaValue)  p.value        = Number(el.dataset.gaValue);
+        if (el.dataset.gaItemId) p.item_id      = el.dataset.gaItemId;
+        window._ga.push(el.dataset.gaEvent, p);
+    }, { passive: true });
+
+    /* ── Affiliate tracking automático (todos los links de Amazon) ──────────
+       Captura clics en cualquier <a href*="amazon."> sin atributos extra.
+       ──────────────────────────────────────────────────────────────────── */
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a[href*="amazon."]');
+        if (!link) return;
+        window._ga.push('affiliate_click', {
+            event_category: 'affiliate',
+            event_label: (link.textContent || '').trim().substring(0, 100),
+            link_url: link.href
+        });
+    }, { passive: true });
     </script>
     @endif
 </head>
