@@ -81,7 +81,9 @@
       "Bash(cmd /c \"C:\\\\laragon\\\\bin\\\\php\\\\php8.3.14\\\\php.exe artisan route:list --name=ai.prompt\")",
       "Bash(cmd /c \"cd D:\\\\laragon\\\\www\\\\marvinbaptista && C:\\\\laragon\\\\bin\\\\php\\\\php8.3.14\\\\php.exe artisan route:list 2>&1 | findstr ai.prompt\")",
       "Bash(find D:laragonwwwmarvinbaptistaconfig -type f -name *.php)",
-      "Bash(xargs head:*)"
+      "Bash(xargs head:*)",
+      "Bash(grep -r \"google_analytics\\\\|gtag\\\\|_ga\\\\|_gid\" D:/laragon/www/marvinbaptista --include=*.php --include=*.blade.php)",
+      "Bash(grep -r \"gtag\\\\|GA4\\\\|analytics\\\\|event\" /d/laragon/www/marvinbaptista/app --include=*.php)"
     ]
   }
 }
