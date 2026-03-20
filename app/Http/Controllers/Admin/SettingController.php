@@ -43,8 +43,20 @@ class SettingController extends Controller
 
         'anthropic_api_key'       => 'ai',
         'anthropic_model'         => 'ai',
+        'openai_api_key'          => 'ai',
+        'openai_model'            => 'ai',
+        'gemini_api_key'          => 'ai',
+        'gemini_model'            => 'ai',
+        'gemma_api_key'           => 'ai',
+        'gemma_api_url'           => 'ai',
+        'gemma_model'             => 'ai',
+        'gemma_timeout'           => 'ai',
+        'deepinfra_api_key'       => 'ai',
+        'deepinfra_api_url'       => 'ai',
+        'deepinfra_model'         => 'ai',
+        'deepinfra_timeout'       => 'ai',
 
-        'ai_provider'             => 'ai',   // 'anthropic' | 'local'
+        'ai_provider'             => 'ai',   // 'anthropic' | 'openai' | 'gemini' | 'gemma' | 'deepinfra' | 'local'
         'local_ai_url'            => 'ai',
         'local_ai_model'          => 'ai',
         'local_ai_api_key'        => 'ai',
@@ -80,7 +92,14 @@ class SettingController extends Controller
             }
 
             // Don't overwrite secret keys with empty value
-            if (in_array($key, ['anthropic_api_key', 'local_ai_api_key']) && blank($value)) {
+            if (in_array($key, [
+                'anthropic_api_key',
+                'openai_api_key',
+                'gemini_api_key',
+                'gemma_api_key',
+                'deepinfra_api_key',
+                'local_ai_api_key',
+            ], true) && blank($value)) {
                 continue;
             }
 

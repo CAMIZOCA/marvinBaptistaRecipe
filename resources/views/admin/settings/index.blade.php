@@ -231,7 +231,7 @@
                 @php $currentProvider = $settings['ai_provider'] ?? 'anthropic'; @endphp
                 <div>
                     <p class="text-sm font-medium text-zinc-300 mb-3">Proveedor de IA</p>
-                    <div class="grid md:grid-cols-2 gap-3">
+                    <div class="grid md:grid-cols-2 xl:grid-cols-6 gap-3">
 
                         <label class="ai-provider-card cursor-pointer" data-provider="anthropic">
                             <input type="radio" name="settings[ai_provider]" value="anthropic"
@@ -243,6 +243,58 @@
                                     <span class="font-medium text-zinc-200 text-sm">Anthropic (Claude)</span>
                                 </div>
                                 <p class="text-xs text-zinc-500">API en la nube. Máxima calidad, requiere clave de pago. Ideal para producción.</p>
+                            </div>
+                        </label>
+
+                        <label class="ai-provider-card cursor-pointer" data-provider="openai">
+                            <input type="radio" name="settings[ai_provider]" value="openai"
+                                   {{ $currentProvider === 'openai' ? 'checked' : '' }} class="sr-only">
+                            <div class="p-4 rounded-xl border-2 transition-all
+                                {{ $currentProvider === 'openai' ? 'border-violet-500 bg-violet-900/20' : 'border-zinc-700 bg-zinc-700/30 hover:border-zinc-500' }}">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-7 h-7 bg-sky-500/20 rounded-lg flex items-center justify-center text-sky-400 text-xs font-bold">O</div>
+                                    <span class="font-medium text-zinc-200 text-sm">OpenAI</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">Modelos GPT por API oficial de OpenAI.</p>
+                            </div>
+                        </label>
+
+                        <label class="ai-provider-card cursor-pointer" data-provider="gemini">
+                            <input type="radio" name="settings[ai_provider]" value="gemini"
+                                   {{ $currentProvider === 'gemini' ? 'checked' : '' }} class="sr-only">
+                            <div class="p-4 rounded-xl border-2 transition-all
+                                {{ $currentProvider === 'gemini' ? 'border-violet-500 bg-violet-900/20' : 'border-zinc-700 bg-zinc-700/30 hover:border-zinc-500' }}">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-7 h-7 bg-teal-500/20 rounded-lg flex items-center justify-center text-teal-400 text-xs font-bold">G</div>
+                                    <span class="font-medium text-zinc-200 text-sm">Gemini</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">Modelos Gemini (Google AI Studio).</p>
+                            </div>
+                        </label>
+
+                        <label class="ai-provider-card cursor-pointer" data-provider="gemma">
+                            <input type="radio" name="settings[ai_provider]" value="gemma"
+                                   {{ $currentProvider === 'gemma' ? 'checked' : '' }} class="sr-only">
+                            <div class="p-4 rounded-xl border-2 transition-all
+                                {{ $currentProvider === 'gemma' ? 'border-violet-500 bg-violet-900/20' : 'border-zinc-700 bg-zinc-700/30 hover:border-zinc-500' }}">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-7 h-7 bg-rose-500/20 rounded-lg flex items-center justify-center text-rose-400 text-xs font-bold">M</div>
+                                    <span class="font-medium text-zinc-200 text-sm">Gemma</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">Gemma en endpoint OpenAI-compatible (local o remoto).</p>
+                            </div>
+                        </label>
+
+                        <label class="ai-provider-card cursor-pointer" data-provider="deepinfra">
+                            <input type="radio" name="settings[ai_provider]" value="deepinfra"
+                                   {{ $currentProvider === 'deepinfra' ? 'checked' : '' }} class="sr-only">
+                            <div class="p-4 rounded-xl border-2 transition-all
+                                {{ $currentProvider === 'deepinfra' ? 'border-violet-500 bg-violet-900/20' : 'border-zinc-700 bg-zinc-700/30 hover:border-zinc-500' }}">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-7 h-7 bg-cyan-500/20 rounded-lg flex items-center justify-center text-cyan-400 text-xs font-bold">D</div>
+                                    <span class="font-medium text-zinc-200 text-sm">DeepInfra</span>
+                                </div>
+                                <p class="text-xs text-zinc-500">Acceso a múltiples modelos open-source vía endpoint OpenAI-compatible.</p>
                             </div>
                         </label>
 
@@ -316,7 +368,145 @@
                     </div>
                 </div>
 
+                {{-- ── OpenAI section ── --}}
+                <div id="ai-section-openai" class="{{ $currentProvider !== 'openai' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
+                    <p class="text-xs font-semibold text-sky-400 uppercase tracking-wider">Configuración OpenAI</p>
+
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Clave API OpenAI</label>
+                        <input type="password" name="settings[openai_api_key]" value=""
+                               placeholder="{{ ($settings['openai_api_key'] ?? null) ? 'sk-proj-••••••••••••••••••' : 'sk-proj-...' }}"
+                               autocomplete="new-password"
+                               class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        <p class="mt-1 text-xs text-zinc-500">Se guarda encriptada. Déjala vacía para conservar la clave actual.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo OpenAI</label>
+                        <select name="settings[openai_model]"
+                                class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm">
+                            @foreach([
+                                'gpt-4.1-mini' => 'GPT-4.1 mini — Recomendado costo/velocidad',
+                                'gpt-4.1'      => 'GPT-4.1 — Más calidad',
+                                'gpt-4o-mini'  => 'GPT-4o mini — Económico',
+                                'gpt-4o'       => 'GPT-4o — Calidad alta',
+                            ] as $value => $label)
+                            <option value="{{ $value }}" {{ ($settings['openai_model'] ?? 'gpt-4.1-mini') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- ── Gemini section ── --}}
+                <div id="ai-section-gemini" class="{{ $currentProvider !== 'gemini' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
+                    <p class="text-xs font-semibold text-teal-400 uppercase tracking-wider">Configuración Gemini</p>
+
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Clave API Gemini</label>
+                        <input type="password" name="settings[gemini_api_key]" value=""
+                               placeholder="{{ ($settings['gemini_api_key'] ?? null) ? 'AIza••••••••••••••••••••' : 'AIza...' }}"
+                               autocomplete="new-password"
+                               class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <p class="mt-1 text-xs text-zinc-500">Usa la API key de Google AI Studio para endpoint OpenAI-compatible.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo Gemini</label>
+                        <select name="settings[gemini_model]"
+                                class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm">
+                            @foreach([
+                                'gemini-2.5-flash' => 'Gemini 2.5 Flash — Recomendado',
+                                'gemini-2.5-pro'   => 'Gemini 2.5 Pro — Más capacidad',
+                                'gemini-2.0-flash' => 'Gemini 2.0 Flash — Rápido',
+                            ] as $value => $label)
+                            <option value="{{ $value }}" {{ ($settings['gemini_model'] ?? 'gemini-2.5-flash') === $value ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- ── Gemma section ── --}}
+                <div id="ai-section-gemma" class="{{ $currentProvider !== 'gemma' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
+                    <p class="text-xs font-semibold text-rose-400 uppercase tracking-wider">Configuración Gemma</p>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">URL de Gemma (endpoint base)</label>
+                            <input type="url" name="settings[gemma_api_url]"
+                                   value="{{ old('settings.gemma_api_url', $settings['gemma_api_url'] ?? 'http://localhost:11434') }}"
+                                   placeholder="http://localhost:11434"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
+                            <p class="mt-1 text-xs text-zinc-500">El sistema agrega automáticamente <code class="bg-zinc-800 px-1 rounded">/v1/chat/completions</code>.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo Gemma</label>
+                            <input type="text" name="settings[gemma_model]"
+                                   value="{{ old('settings.gemma_model', $settings['gemma_model'] ?? 'gemma3:4b') }}"
+                                   placeholder="gemma3:4b / gemma3:12b"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">API Key Gemma (opcional)</label>
+                            <input type="text" name="settings[gemma_api_key]" value=""
+                                   placeholder="{{ ($settings['gemma_api_key'] ?? null) ? '••••••••••••' : 'local (opcional)' }}"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Timeout Gemma (segundos)</label>
+                            <input type="number" name="settings[gemma_timeout]" min="30" max="900" step="30"
+                                   value="{{ old('settings.gemma_timeout', $settings['gemma_timeout'] ?? 300) }}"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-rose-500">
+                        </div>
+                    </div>
+                </div>
+
                 {{-- ── Local AI section ── --}}
+                <div id="ai-section-deepinfra" class="{{ $currentProvider !== 'deepinfra' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
+                    <p class="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Configuración DeepInfra</p>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">URL de DeepInfra (endpoint base)</label>
+                            <input type="url" name="settings[deepinfra_api_url]"
+                                   value="{{ old('settings.deepinfra_api_url', $settings['deepinfra_api_url'] ?? 'https://api.deepinfra.com/v1/openai') }}"
+                                   placeholder="https://api.deepinfra.com/v1/openai"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                            <p class="mt-1 text-xs text-zinc-500">El sistema agrega automáticamente <code class="bg-zinc-800 px-1 rounded">/chat/completions</code> si hace falta.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Modelo DeepInfra</label>
+                            <input type="text" name="settings[deepinfra_model]"
+                                   value="{{ old('settings.deepinfra_model', $settings['deepinfra_model'] ?? 'meta-llama/Llama-3.3-70B-Instruct') }}"
+                                   placeholder="meta-llama/Llama-3.3-70B-Instruct"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">API Key DeepInfra</label>
+                            <input type="password" name="settings[deepinfra_api_key]" value=""
+                                   placeholder="{{ ($settings['deepinfra_api_key'] ?? null) ? '••••••••••••' : 'Introduce tu API key' }}"
+                                   autocomplete="new-password"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl placeholder-zinc-500 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                            <p class="mt-1 text-xs text-zinc-500">Se guarda encriptada. Déjala vacía para conservar la clave actual.</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-300 mb-1.5">Timeout DeepInfra (segundos)</label>
+                            <input type="number" name="settings[deepinfra_timeout]" min="30" max="900" step="30"
+                                   value="{{ old('settings.deepinfra_timeout', $settings['deepinfra_timeout'] ?? 180) }}"
+                                   class="w-full px-4 py-2.5 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+                </div>
+
                 <div id="ai-section-local" class="{{ $currentProvider !== 'local' ? 'hidden' : '' }} space-y-4 p-4 bg-zinc-700/20 rounded-xl border border-zinc-700">
                     <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Configuración IA Local</p>
 
@@ -486,9 +676,13 @@ document.addEventListener('DOMContentLoaded', function () {
     var stored = sessionStorage.getItem(activeKey) || 'general';
     activateTab(stored);
 
-    // ── Provider toggle (Anthropic / Local) ───────────────────────
+    // ── Provider toggle (Anthropic / OpenAI / Gemini / Gemma / Local) ─────
     var providerCards    = document.querySelectorAll('.ai-provider-card');
     var sectionAnthropic = document.getElementById('ai-section-anthropic');
+    var sectionOpenai    = document.getElementById('ai-section-openai');
+    var sectionGemini    = document.getElementById('ai-section-gemini');
+    var sectionGemma     = document.getElementById('ai-section-gemma');
+    var sectionDeepinfra = document.getElementById('ai-section-deepinfra');
     var sectionLocal     = document.getElementById('ai-section-local');
 
     function switchProvider(provider) {
@@ -501,6 +695,10 @@ document.addEventListener('DOMContentLoaded', function () {
             inner.classList.toggle('bg-zinc-700/30',    !isActive);
         });
         if (sectionAnthropic) sectionAnthropic.classList.toggle('hidden', provider !== 'anthropic');
+        if (sectionOpenai)    sectionOpenai.classList.toggle('hidden',    provider !== 'openai');
+        if (sectionGemini)    sectionGemini.classList.toggle('hidden',    provider !== 'gemini');
+        if (sectionGemma)     sectionGemma.classList.toggle('hidden',     provider !== 'gemma');
+        if (sectionDeepinfra) sectionDeepinfra.classList.toggle('hidden', provider !== 'deepinfra');
         if (sectionLocal)     sectionLocal.classList.toggle('hidden',     provider !== 'local');
     }
 
@@ -510,6 +708,8 @@ document.addEventListener('DOMContentLoaded', function () {
             if (radio) { radio.checked = true; switchProvider(card.dataset.provider); }
         });
     });
+    var initialProvider = (document.querySelector('input[name="settings[ai_provider]"]:checked') || {}).value || 'anthropic';
+    switchProvider(initialProvider);
 
     // ── Show/hide API key ──────────────────────────────────────────
     var toggleBtn = document.getElementById('toggle-key-visibility');
@@ -548,6 +748,34 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (urlEl)   payload.local_ai_url       = urlEl.value;
                 if (modelEl) payload.local_ai_model     = modelEl.value;
                 if (keyEl)   payload.local_ai_api_key   = keyEl.value;
+            } else if (selectedProvider === 'openai') {
+                var openAiModelEl = document.querySelector('select[name="settings[openai_model]"]');
+                var openAiKeyEl = document.querySelector('input[name="settings[openai_api_key]"]');
+                if (openAiModelEl) payload.openai_model = openAiModelEl.value;
+                if (openAiKeyEl) payload.openai_api_key = openAiKeyEl.value;
+            } else if (selectedProvider === 'gemini') {
+                var geminiModelEl = document.querySelector('select[name="settings[gemini_model]"]');
+                var geminiKeyEl = document.querySelector('input[name="settings[gemini_api_key]"]');
+                if (geminiModelEl) payload.gemini_model = geminiModelEl.value;
+                if (geminiKeyEl) payload.gemini_api_key = geminiKeyEl.value;
+            } else if (selectedProvider === 'gemma') {
+                var gemmaUrlEl = document.querySelector('input[name="settings[gemma_api_url]"]');
+                var gemmaModelEl = document.querySelector('input[name="settings[gemma_model]"]');
+                var gemmaKeyEl = document.querySelector('input[name="settings[gemma_api_key]"]');
+                var gemmaTimeoutEl = document.querySelector('input[name="settings[gemma_timeout]"]');
+                if (gemmaUrlEl) payload.gemma_api_url = gemmaUrlEl.value;
+                if (gemmaModelEl) payload.gemma_model = gemmaModelEl.value;
+                if (gemmaKeyEl) payload.gemma_api_key = gemmaKeyEl.value;
+                if (gemmaTimeoutEl) payload.gemma_timeout = gemmaTimeoutEl.value;
+            } else if (selectedProvider === 'deepinfra') {
+                var deepinfraUrlEl = document.querySelector('input[name="settings[deepinfra_api_url]"]');
+                var deepinfraModelEl = document.querySelector('input[name="settings[deepinfra_model]"]');
+                var deepinfraKeyEl = document.querySelector('input[name="settings[deepinfra_api_key]"]');
+                var deepinfraTimeoutEl = document.querySelector('input[name="settings[deepinfra_timeout]"]');
+                if (deepinfraUrlEl) payload.deepinfra_api_url = deepinfraUrlEl.value;
+                if (deepinfraModelEl) payload.deepinfra_model = deepinfraModelEl.value;
+                if (deepinfraKeyEl) payload.deepinfra_api_key = deepinfraKeyEl.value;
+                if (deepinfraTimeoutEl) payload.deepinfra_timeout = deepinfraTimeoutEl.value;
             }
 
             fetch('{{ route('admin.settings.test-ai') }}', {

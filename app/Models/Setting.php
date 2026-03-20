@@ -9,7 +9,14 @@ class Setting extends Model
 {
     protected $fillable = ['key', 'value', 'group'];
 
-    private static array $encryptedKeys = ['anthropic_api_key', 'local_ai_api_key'];
+    private static array $encryptedKeys = [
+        'anthropic_api_key',
+        'openai_api_key',
+        'gemini_api_key',
+        'gemma_api_key',
+        'deepinfra_api_key',
+        'local_ai_api_key',
+    ];
 
     public static function get(string $key, mixed $default = null): mixed
     {

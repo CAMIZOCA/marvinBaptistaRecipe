@@ -6,6 +6,7 @@ use App\Models\AmazonBook;
 use App\Models\Recipe;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class RecipeEnhancer
 {
@@ -15,12 +16,11 @@ class RecipeEnhancer
 
         $prompt   = $this->buildUserPrompt($recipe);
         $provider = Setting::get('ai_provider', 'anthropic');
+        $model = $this->resolveProviderModel((string) $provider);
 
-        $content = $provider === 'local'
-            ? $this->callLocalAi($prompt)
-            : $this->callAnthropic($prompt);
+        $rawContent = $this->callProvider((string) $provider, $prompt);
 
-        $content = $this->extractJsonFromResponse($content);
+        $content = $this->extractJsonFromResponse($rawContent);
 
         $result = json_decode(trim($content), true);
 
@@ -32,7 +32,34 @@ class RecipeEnhancer
             }
         }
 
-        return $this->validateAndClean($result);
+        $clean = $this->validateAndClean($result);
+        $this->logAiExchange('enhance_full', [
+            'recipe_id' => $recipe->id,
+            'recipe_title' => $recipe->title,
+            'provider' => (string) $provider,
+            'model' => $model,
+            'prompt' => $prompt,
+            'raw_response' => $rawContent,
+            'normalized_response' => $content,
+            'clean_result' => $clean,
+        ]);
+
+        return $clean;
+    }
+
+    private function callProvider(string $provider, string $prompt): string
+    {
+        return match ($provider) {
+            'anthropic' => $this->callAnthropic($prompt),
+            'local'  => $this->callLocalAi($prompt),
+            'openai' => $this->callOpenAi($prompt),
+            'gemini' => $this->callGemini($prompt),
+            'gemma'  => $this->callGemma($prompt),
+            'deepinfra' => $this->callDeepinfra($prompt),
+            default  => throw new \RuntimeException(
+                "Proveedor de IA no válido: '{$provider}'. Ve a Ajustes -> IA, selecciona un proveedor válido y guarda antes de procesar."
+            ),
+        };
     }
 
     /* ─── Anthropic (Claude) ──────────────────────────────────────── */
@@ -84,10 +111,7 @@ class RecipeEnhancer
             );
         }
 
-        // Ensure endpoint ends with /v1/chat/completions (OpenAI-compatible)
-        if (!str_ends_with($url, '/chat/completions')) {
-            $url = rtrim($url, '/') . '/v1/chat/completions';
-        }
+        $url = $this->normalizeOpenAiCompatibleUrl($url);
 
         $systemPrompt = config('ai.system_prompt',
             'Eres un experto consultor de SEO para blogs de cocina. Responde siempre en español con JSON válido.'
@@ -95,28 +119,162 @@ class RecipeEnhancer
 
         $timeout = (int) Setting::get('local_ai_timeout', 300);
 
-        $response = Http::withHeaders([
-            'Content-Type'  => 'application/json',
-            'Authorization' => 'Bearer ' . ($key ?: 'local'),
-        ])
-        ->timeout($timeout)
-        ->post($url, [
-            'model'    => $model,
-            'stream'   => false,
-            'messages' => [
-                ['role' => 'system', 'content' => $systemPrompt],
-                ['role' => 'user',   'content' => $prompt],
-            ],
-        ]);
+        return $this->callOpenAiCompatible(
+            providerLabel: 'IA local',
+            endpoint: $url,
+            apiKey: (string) ($key ?: 'local'),
+            model: (string) $model,
+            prompt: $prompt,
+            timeout: $timeout,
+            systemPrompt: (string) $systemPrompt,
+        );
+    }
 
-        if (!$response->successful()) {
-            throw new \RuntimeException(
-                'Error IA local ' . $response->status() . ': ' . $response->body()
-            );
+    private function callOpenAi(string $prompt): string
+    {
+        $apiKey = (string) (Setting::get('openai_api_key') ?: config('services.openai.key'));
+        $model = (string) (Setting::get('openai_model') ?: config('ai.openai.model', 'gpt-4.1-mini'));
+        $url = (string) config('ai.openai.api_url', config('services.openai.api_url', 'https://api.openai.com/v1/chat/completions'));
+        $timeout = (int) config('ai.openai.timeout', config('services.openai.timeout', 90));
+
+        if (blank($apiKey)) {
+            throw new \RuntimeException('No hay clave API de OpenAI configurada. Ve a Ajustes â†’ IA y agrega tu clave.');
         }
 
-        // OpenAI-compatible response
-        return $response->json('choices.0.message.content', '');
+        return $this->callOpenAiCompatible(
+            providerLabel: 'OpenAI',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($url),
+            apiKey: $apiKey,
+            model: $model,
+            prompt: $prompt,
+            timeout: $timeout,
+            systemPrompt: (string) config('ai.system_prompt'),
+        );
+    }
+
+    private function callGemini(string $prompt): string
+    {
+        $apiKey = (string) (Setting::get('gemini_api_key') ?: config('services.gemini.key'));
+        $model = (string) (Setting::get('gemini_model') ?: config('ai.gemini.model', 'gemini-2.5-flash'));
+        $url = (string) config('ai.gemini.api_url', config('services.gemini.api_url', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'));
+        $timeout = (int) config('ai.gemini.timeout', config('services.gemini.timeout', 90));
+
+        if (blank($apiKey)) {
+            throw new \RuntimeException('No hay clave API de Gemini configurada. Ve a Ajustes â†’ IA y agrega tu clave.');
+        }
+
+        return $this->callOpenAiCompatible(
+            providerLabel: 'Gemini',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($url),
+            apiKey: $apiKey,
+            model: $model,
+            prompt: $prompt,
+            timeout: $timeout,
+            systemPrompt: (string) config('ai.system_prompt'),
+        );
+    }
+
+    private function callGemma(string $prompt): string
+    {
+        $url = (string) (Setting::get('gemma_api_url') ?: config('ai.gemma.api_url', config('services.gemma.api_url', 'http://localhost:11434/v1/chat/completions')));
+        $model = (string) (Setting::get('gemma_model') ?: config('ai.gemma.model', 'gemma3:4b'));
+        $key = (string) (Setting::get('gemma_api_key') ?: config('services.gemma.key', 'local'));
+        $timeout = (int) (Setting::get('gemma_timeout') ?: config('ai.gemma.timeout', config('services.gemma.timeout', 300)));
+
+        if (blank($url)) {
+            throw new \RuntimeException('No hay URL para Gemma configurada. Ve a Ajustes â†’ IA.');
+        }
+
+        return $this->callOpenAiCompatible(
+            providerLabel: 'Gemma',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($url),
+            apiKey: $key ?: 'local',
+            model: $model,
+            prompt: $prompt,
+            timeout: $timeout,
+            systemPrompt: (string) config('ai.system_prompt'),
+        );
+    }
+
+    private function callDeepinfra(string $prompt): string
+    {
+        $apiKey = (string) (Setting::get('deepinfra_api_key') ?: config('services.deepinfra.key'));
+        $model = (string) (Setting::get('deepinfra_model') ?: config('ai.deepinfra.model', config('services.deepinfra.model', 'meta-llama/Llama-3.3-70B-Instruct')));
+        $url = (string) (Setting::get('deepinfra_api_url') ?: config('ai.deepinfra.api_url', config('services.deepinfra.api_url', 'https://api.deepinfra.com/v1/openai/chat/completions')));
+        $timeout = (int) (Setting::get('deepinfra_timeout') ?: config('ai.deepinfra.timeout', config('services.deepinfra.timeout', 180)));
+
+        if (blank($apiKey)) {
+            throw new \RuntimeException('No hay clave API de DeepInfra configurada. Ve a Ajustes -> IA y agrega tu clave.');
+        }
+
+        return $this->callOpenAiCompatible(
+            providerLabel: 'DeepInfra',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($url),
+            apiKey: $apiKey,
+            model: $model,
+            prompt: $prompt,
+            timeout: $timeout,
+            systemPrompt: (string) config('ai.system_prompt'),
+        );
+    }
+
+    private function normalizeOpenAiCompatibleUrl(string $url): string
+    {
+        $url = rtrim($url, '/');
+        if (str_ends_with($url, '/chat/completions')) {
+            return $url;
+        }
+
+        // DeepInfra/OpenAI proxy style base (e.g. /v1/openai)
+        if (str_ends_with($url, '/openai') || str_ends_with($url, '/v1/openai')) {
+            return $url . '/chat/completions';
+        }
+
+        $url .= '/v1/chat/completions';
+
+        return $url;
+    }
+
+    private function callOpenAiCompatible(
+        string $providerLabel,
+        string $endpoint,
+        string $apiKey,
+        string $model,
+        string $prompt,
+        int $timeout,
+        string $systemPrompt
+    ): string {
+        try {
+            $response = Http::withHeaders([
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . ($apiKey ?: 'local'),
+            ])
+            ->connectTimeout(15)
+            ->timeout($timeout > 0 ? $timeout : 90)
+            ->retry(1, 250)
+            ->post($endpoint, [
+                'model'    => $model,
+                'stream'   => false,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $prompt],
+                ],
+            ]);
+
+            if (!$response->successful()) {
+                $errorMessage = $response->json('error.message')
+                    ?? $response->json('message')
+                    ?? $response->body();
+                throw new \RuntimeException("Error {$providerLabel} {$response->status()}: {$errorMessage}");
+            }
+
+            return (string) $response->json('choices.0.message.content', '');
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            throw new \RuntimeException(
+                "{$providerLabel}: no se pudo conectar o la respuesta tardó demasiado (timeout). Endpoint: {$endpoint}",
+                previous: $e
+            );
+        }
     }
 
     /* ─── Apply enhancements ──────────────────────────────────────── */
@@ -245,12 +403,11 @@ class RecipeEnhancer
 
         $prompt   = $this->buildFieldPrompt($recipe, $field);
         $provider = Setting::get('ai_provider', 'anthropic');
+        $model = $this->resolveProviderModel((string) $provider);
 
-        $content = $provider === 'local'
-            ? $this->callLocalAi($prompt)
-            : $this->callAnthropic($prompt);
+        $rawContent = $this->callProvider((string) $provider, $prompt);
+        $content = $this->extractJsonFromResponse($rawContent);
 
-        $content = $this->extractJsonFromResponse($content);
         $decoded = json_decode(trim($content), true);
 
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
@@ -264,7 +421,46 @@ class RecipeEnhancer
         }
 
         $cleaned = $this->validateAndClean($decoded);
-        return $cleaned[$field] ?? null;
+        $value = $cleaned[$field] ?? null;
+
+        $this->logAiExchange('enhance_field', [
+            'recipe_id' => $recipe->id,
+            'recipe_title' => $recipe->title,
+            'field' => $field,
+            'provider' => (string) $provider,
+            'model' => $model,
+            'prompt' => $prompt,
+            'raw_response' => $rawContent,
+            'normalized_response' => $content,
+            'value' => $value,
+        ]);
+
+        return $value;
+    }
+
+    private function resolveProviderModel(string $provider): string
+    {
+        return match ($provider) {
+            'local'  => (string) (Setting::get('local_ai_model', 'llama3.2') ?: 'llama3.2'),
+            'openai' => (string) (Setting::get('openai_model') ?: config('ai.openai.model', 'gpt-4.1-mini')),
+            'gemini' => (string) (Setting::get('gemini_model') ?: config('ai.gemini.model', 'gemini-2.5-flash')),
+            'gemma'  => (string) (Setting::get('gemma_model') ?: config('ai.gemma.model', 'gemma3:4b')),
+            'deepinfra' => (string) (Setting::get('deepinfra_model') ?: config('ai.deepinfra.model', 'meta-llama/Llama-3.3-70B-Instruct')),
+            default  => (string) (Setting::get('anthropic_model') ?: config('ai.anthropic.model', 'claude-sonnet-4-6')),
+        };
+    }
+
+    private function logAiExchange(string $event, array $payload): void
+    {
+        try {
+            Log::channel('ai')->info($event, $payload);
+        } catch (\Throwable $e) {
+            Log::info('ai_log_fallback', [
+                'event' => $event,
+                'payload' => $payload,
+                'log_error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -685,3 +881,6 @@ CTX;
         return (string) $value;
     }
 }
+
+
+

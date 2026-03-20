@@ -83,7 +83,13 @@
       "Bash(find D:laragonwwwmarvinbaptistaconfig -type f -name *.php)",
       "Bash(xargs head:*)",
       "Bash(grep -r \"google_analytics\\\\|gtag\\\\|_ga\\\\|_gid\" D:/laragon/www/marvinbaptista --include=*.php --include=*.blade.php)",
-      "Bash(grep -r \"gtag\\\\|GA4\\\\|analytics\\\\|event\" /d/laragon/www/marvinbaptista/app --include=*.php)"
+      "Bash(grep -r \"gtag\\\\|GA4\\\\|analytics\\\\|event\" /d/laragon/www/marvinbaptista/app --include=*.php)",
+      "Bash(php --version)",
+      "Bash(grep -rn \"href.*$\\\\|src.*$\" resources/views/home/index.blade.php resources/views/components/public/header.blade.php)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(find D:laragonwwwmarvinbaptista/resources/js -type f -name *.js)"
     ]
   }
 }

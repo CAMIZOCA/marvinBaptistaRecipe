@@ -9,6 +9,37 @@ return [
         'timeout' => 90,
     ],
 
+    'openai' => [
+        'api_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
+        'model' => env('OPENAI_MODEL', 'gpt-4.1-mini'),
+        'max_tokens' => 4096,
+        'timeout' => (int) env('OPENAI_TIMEOUT', 90),
+    ],
+
+    'gemini' => [
+        // OpenAI-compatible endpoint from Google AI Studio
+        'api_url' => env('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'max_tokens' => 4096,
+        'timeout' => (int) env('GEMINI_TIMEOUT', 90),
+    ],
+
+    'gemma' => [
+        // OpenAI-compatible endpoint (often local)
+        'api_url' => env('GEMMA_API_URL', 'http://localhost:11434/v1/chat/completions'),
+        'model' => env('GEMMA_MODEL', 'gemma3:4b'),
+        'max_tokens' => 4096,
+        'timeout' => (int) env('GEMMA_TIMEOUT', 300),
+    ],
+
+    'deepinfra' => [
+        // OpenAI-compatible endpoint (DeepInfra)
+        'api_url' => env('DEEPINFRA_API_URL', 'https://api.deepinfra.com/v1/openai/chat/completions'),
+        'model' => env('DEEPINFRA_MODEL', 'meta-llama/Llama-3.3-70B-Instruct'),
+        'max_tokens' => 4096,
+        'timeout' => (int) env('DEEPINFRA_TIMEOUT', 180),
+    ],
+
     'system_prompt' =>
         "Eres un chef internacional con 20 años de experiencia en cocina latinoamericana, mediterránea y asiática, " .
         "además de editor gastronómico senior para publicaciones de alta circulación. " .

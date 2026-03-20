@@ -10,6 +10,7 @@ use App\Services\RecipeEnhancer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -146,11 +147,24 @@ class RecipeAiController extends Controller
     public function testApiKey(Request $request): JsonResponse
     {
         // Use provider from request (current UI selection) or fall back to saved DB value
-        $provider = $request->input('provider', Setting::get('ai_provider', 'anthropic'));
+        $provider = (string) $request->input('provider', Setting::get('ai_provider', 'anthropic'));
+        $allowedProviders = ['anthropic', 'openai', 'gemini', 'gemma', 'deepinfra', 'local'];
 
-        return $provider === 'local'
-            ? $this->testLocalAi($request)
-            : $this->testAnthropic();
+        if (!in_array($provider, $allowedProviders, true)) {
+            return response()->json([
+                'ok' => false,
+                'message' => "Proveedor de IA inválido: '{$provider}'. Guarda de nuevo la configuración de IA.",
+            ], 422);
+        }
+
+        return match ($provider) {
+            'local'  => $this->testLocalAi($request),
+            'openai' => $this->testOpenAi($request),
+            'gemini' => $this->testGemini($request),
+            'gemma'  => $this->testGemma($request),
+            'deepinfra' => $this->testDeepinfra($request),
+            default  => $this->testAnthropic(),
+        };
     }
 
     private function testAnthropic(): JsonResponse
@@ -198,9 +212,13 @@ class RecipeAiController extends Controller
     private function testLocalAi(Request $request): JsonResponse
     {
         // Prefer values sent from the UI form (not yet saved) over DB values
-        $baseUrl = rtrim($request->input('local_ai_url', Setting::get('local_ai_url', '')), '/');
-        $model   = $request->input('local_ai_model', Setting::get('local_ai_model', 'llama3.2'));
-        $key     = $request->input('local_ai_api_key', Setting::get('local_ai_api_key', 'local'));
+        $baseUrlInput = trim((string) $request->input('local_ai_url', ''));
+        $modelInput = trim((string) $request->input('local_ai_model', ''));
+        $keyInput = (string) $request->input('local_ai_api_key', '');
+
+        $baseUrl = rtrim($baseUrlInput !== '' ? $baseUrlInput : (string) Setting::get('local_ai_url', ''), '/');
+        $model = $modelInput !== '' ? $modelInput : (string) Setting::get('local_ai_model', 'llama3.2');
+        $key = $keyInput !== '' ? $keyInput : (string) Setting::get('local_ai_api_key', 'local');
 
         if (blank($baseUrl)) {
             return response()->json(['ok' => false, 'message' => 'No hay URL de IA local configurada.'], 422);
@@ -237,6 +255,159 @@ class RecipeAiController extends Controller
                 ? "No se pudo conectar a {$baseUrl}. ¿Está corriendo Ollama / LM Studio?"
                 : 'Error: ' . $e->getMessage();
             return response()->json(['ok' => false, 'message' => $msg], 500);
+        }
+    }
+
+    private function testOpenAi(Request $request): JsonResponse
+    {
+        $apiKeyInput = trim((string) $request->input('openai_api_key', ''));
+        $modelInput = trim((string) $request->input('openai_model', ''));
+        $apiKey = $apiKeyInput !== '' ? $apiKeyInput : (string) Setting::get('openai_api_key', config('services.openai.key'));
+        $model = $modelInput !== '' ? $modelInput : (string) Setting::get('openai_model', config('ai.openai.model', 'gpt-4.1-mini'));
+        $baseUrl = (string) config('ai.openai.api_url', config('services.openai.api_url', 'https://api.openai.com/v1/chat/completions'));
+
+        if (blank($apiKey)) {
+            return response()->json(['ok' => false, 'message' => 'No hay clave API de OpenAI configurada.'], 422);
+        }
+
+        return $this->testOpenAiCompatibleProvider(
+            providerName: 'OpenAI',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($baseUrl),
+            model: $model,
+            apiKey: $apiKey,
+            timeout: (int) config('ai.openai.timeout', config('services.openai.timeout', 20)),
+        );
+    }
+
+    private function testGemini(Request $request): JsonResponse
+    {
+        $apiKeyInput = trim((string) $request->input('gemini_api_key', ''));
+        $modelInput = trim((string) $request->input('gemini_model', ''));
+        $apiKey = $apiKeyInput !== '' ? $apiKeyInput : (string) Setting::get('gemini_api_key', config('services.gemini.key'));
+        $model = $modelInput !== '' ? $modelInput : (string) Setting::get('gemini_model', config('ai.gemini.model', 'gemini-2.5-flash'));
+        $baseUrl = (string) config('ai.gemini.api_url', config('services.gemini.api_url', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'));
+
+        if (blank($apiKey)) {
+            return response()->json(['ok' => false, 'message' => 'No hay clave API de Gemini configurada.'], 422);
+        }
+
+        return $this->testOpenAiCompatibleProvider(
+            providerName: 'Gemini',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($baseUrl),
+            model: $model,
+            apiKey: $apiKey,
+            timeout: (int) config('ai.gemini.timeout', config('services.gemini.timeout', 20)),
+        );
+    }
+
+    private function testGemma(Request $request): JsonResponse
+    {
+        $baseUrlInput = trim((string) $request->input('gemma_api_url', ''));
+        $modelInput = trim((string) $request->input('gemma_model', ''));
+        $apiKeyInput = (string) $request->input('gemma_api_key', '');
+        $timeoutInput = (int) $request->input('gemma_timeout', 0);
+
+        $baseUrl = $baseUrlInput !== '' ? $baseUrlInput : (string) Setting::get('gemma_api_url', config('ai.gemma.api_url', 'http://localhost:11434'));
+        $model = $modelInput !== '' ? $modelInput : (string) Setting::get('gemma_model', config('ai.gemma.model', 'gemma3:4b'));
+        $apiKey = $apiKeyInput !== '' ? $apiKeyInput : (string) Setting::get('gemma_api_key', config('services.gemma.key', 'local'));
+        $timeout = $timeoutInput > 0 ? $timeoutInput : (int) Setting::get('gemma_timeout', config('ai.gemma.timeout', 300));
+
+        if (blank($baseUrl)) {
+            return response()->json(['ok' => false, 'message' => 'No hay URL para Gemma configurada.'], 422);
+        }
+
+        return $this->testOpenAiCompatibleProvider(
+            providerName: 'Gemma',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($baseUrl),
+            model: $model,
+            apiKey: $apiKey ?: 'local',
+            timeout: $timeout > 0 ? $timeout : 20,
+        );
+    }
+
+    private function testDeepinfra(Request $request): JsonResponse
+    {
+        $baseUrlInput = trim((string) $request->input('deepinfra_api_url', ''));
+        $modelInput = trim((string) $request->input('deepinfra_model', ''));
+        $apiKeyInput = trim((string) $request->input('deepinfra_api_key', ''));
+        $timeoutInput = (int) $request->input('deepinfra_timeout', 0);
+
+        $baseUrl = $baseUrlInput !== ''
+            ? $baseUrlInput
+            : (string) Setting::get('deepinfra_api_url', config('ai.deepinfra.api_url', 'https://api.deepinfra.com/v1/openai/chat/completions'));
+        $model = $modelInput !== ''
+            ? $modelInput
+            : (string) Setting::get('deepinfra_model', config('ai.deepinfra.model', 'meta-llama/Llama-3.3-70B-Instruct'));
+        $apiKey = $apiKeyInput !== ''
+            ? $apiKeyInput
+            : (string) Setting::get('deepinfra_api_key', config('services.deepinfra.key'));
+        $timeout = $timeoutInput > 0
+            ? $timeoutInput
+            : (int) Setting::get('deepinfra_timeout', config('ai.deepinfra.timeout', 180));
+
+        if (blank($apiKey)) {
+            return response()->json(['ok' => false, 'message' => 'No hay clave API de DeepInfra configurada.'], 422);
+        }
+
+        return $this->testOpenAiCompatibleProvider(
+            providerName: 'DeepInfra',
+            endpoint: $this->normalizeOpenAiCompatibleUrl($baseUrl),
+            model: $model,
+            apiKey: $apiKey,
+            timeout: $timeout > 0 ? $timeout : 20,
+        );
+    }
+
+    private function normalizeOpenAiCompatibleUrl(string $baseUrl): string
+    {
+        $baseUrl = rtrim($baseUrl, '/');
+        if (str_ends_with($baseUrl, '/chat/completions')) {
+            return $baseUrl;
+        }
+
+        if (str_ends_with($baseUrl, '/openai') || str_ends_with($baseUrl, '/v1/openai')) {
+            return $baseUrl . '/chat/completions';
+        }
+
+        $baseUrl .= '/v1/chat/completions';
+
+        return $baseUrl;
+    }
+
+    private function testOpenAiCompatibleProvider(
+        string $providerName,
+        string $endpoint,
+        string $model,
+        string $apiKey,
+        int $timeout = 20
+    ): JsonResponse {
+        try {
+            $response = Http::withHeaders([
+                'Content-Type'  => 'application/json',
+                'Authorization' => 'Bearer ' . ($apiKey ?: 'local'),
+            ])
+            ->timeout($timeout > 0 ? $timeout : 20)
+            ->post($endpoint, [
+                'model'      => $model,
+                'stream'     => false,
+                'max_tokens' => 5,
+                'messages'   => [['role' => 'user', 'content' => 'Reply with "ok"']],
+            ]);
+
+            if ($response->successful()) {
+                $modelUsed = $response->json('model', $model);
+                return response()->json(['ok' => true, 'message' => "Conexión exitosa con {$providerName}. Modelo: {$modelUsed}"]);
+            }
+
+            return response()->json([
+                'ok'      => false,
+                'message' => "Error {$response->status()}: {$response->body()}",
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => "No se pudo conectar con {$providerName}: " . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -295,33 +466,75 @@ class RecipeAiController extends Controller
     public function enhanceBatch(Request $request): JsonResponse
     {
         $request->validate([
-            'ids'   => ['required', 'array', 'min:1', 'max:50'],
+            'ids'   => ['nullable', 'array', 'min:1', 'max:2000'],
             'ids.*' => ['integer', 'exists:recipes,id'],
+            'mode'  => ['nullable', 'string', 'in:ids,pending'],
+            'limit' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'category_slug' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $ids      = $request->ids;
+        if ($validationError = $this->validateBatchAiConfiguration()) {
+            return $validationError;
+        }
+
+        $ids = $this->resolveBatchRecipeIds($request);
+        if (empty($ids)) {
+            return response()->json([
+                'error' => 'No hay recetas pendientes para procesar con IA.',
+                'error_type' => 'empty',
+            ], 422);
+        }
+
         $batchId  = Str::uuid()->toString();
         $cacheKey = "ai_batch:{$batchId}";
         $total    = count($ids);
+        $promptConfig = $this->resolvePromptConfigurationSummary();
+        $recipesPreview = Recipe::whereIn('id', $ids)
+            ->orderBy('id')
+            ->get(['id', 'title'])
+            ->map(fn ($r) => ['id' => $r->id, 'title' => $r->title])
+            ->values()
+            ->all();
 
         // Inicializar caché de progreso
         Cache::put($cacheKey, [
             'processed' => 0,
             'errors'    => [],
-            'log'       => [],
+            'log'       => [[
+                'status' => 'info',
+                'msg' => $promptConfig['message'],
+                'time' => now()->format('H:i:s'),
+            ]],
             'total'     => $total,
             'done'      => false,
-        ], 1800);
+            'status'    => 'running',
+            'started_at' => now()->toIso8601String(),
+            'last_update_at' => now()->toIso8601String(),
+            'recipes'   => $recipesPreview,
+            'prompt_config' => $promptConfig,
+        ], 14400);
 
         // Despachar un job por receta
+        $queueName = config('queue.connections.' . config('queue.default') . '.queue', 'default');
+        $pendingBefore = DB::table('jobs')
+            ->where('queue', $queueName)
+            ->whereNull('reserved_at')
+            ->count();
         foreach ($ids as $recipeId) {
             EnhanceRecipeBatchJob::dispatch($recipeId, $cacheKey, $total)
-                ->onQueue('ai');
+                ->onQueue($queueName);
         }
 
         return response()->json([
             'batch_id' => $batchId,
             'total'    => $total,
+            'recipes'  => $recipesPreview,
+            'queue_name' => $queueName,
+            'pending_before' => $pendingBefore,
+            'prompt_config' => $promptConfig,
+            'warning' => $pendingBefore > 0
+                ? "Hay {$pendingBefore} job(s) pendientes en cola antes de este lote. Inicia/valida queue:work para que comience a procesar."
+                : null,
             'message'  => "Lote iniciado: {$total} receta(s) en cola.",
         ]);
     }
@@ -342,6 +555,187 @@ class RecipeAiController extends Controller
             return response()->json(['error' => 'Lote no encontrado o expirado'], 404);
         }
 
+        if (($progress['done'] ?? false) !== true && ($progress['status'] ?? 'running') === 'running') {
+            $lastUpdate = $progress['last_update_at'] ?? null;
+            $staleAfterSeconds = 6 * 60;
+
+            if (is_string($lastUpdate)) {
+                try {
+                    $secondsSinceUpdate = now()->diffInSeconds(\Carbon\Carbon::parse($lastUpdate));
+                    if ($secondsSinceUpdate >= $staleAfterSeconds) {
+                        $progress['done'] = true;
+                        $progress['status'] = 'failed';
+                        $progress['errors'][] = 'Lote detenido por inactividad: no hubo actualizaciones de progreso en varios minutos.';
+                        $progress['log'][] = [
+                            'status' => 'error',
+                            'msg' => 'Lote cerrado automaticamente por inactividad prolongada.',
+                            'time' => now()->format('H:i:s'),
+                        ];
+                        $progress['last_update_at'] = now()->toIso8601String();
+                        Cache::put("ai_batch:{$batchId}", $progress, 14400);
+                    }
+                } catch (\Throwable) {
+                    // Ignore parse errors and return current progress.
+                }
+            }
+        }
+
         return response()->json($progress);
+    }
+
+    /**
+     * Validate minimal AI configuration before dispatching a long batch.
+     */
+    private function validateBatchAiConfiguration(): ?JsonResponse
+    {
+        $provider = (string) Setting::get('ai_provider', 'anthropic');
+        $allowedProviders = ['anthropic', 'openai', 'gemini', 'gemma', 'deepinfra', 'local'];
+
+        if (!in_array($provider, $allowedProviders, true)) {
+            return response()->json([
+                'error' => "Proveedor de IA inválido en ajustes: '{$provider}'. Ve a Ajustes > IA, selecciona uno válido y guarda.",
+                'error_type' => 'config',
+            ], 422);
+        }
+
+        if ($provider === 'local') {
+            $url = trim((string) Setting::get('local_ai_url', ''));
+            if ($url === '') {
+                return response()->json([
+                    'error' => 'No hay URL de IA local configurada. Ve a Ajustes > IA y guarda la URL antes de iniciar el lote.',
+                    'error_type' => 'config',
+                ], 422);
+            }
+            return null;
+        }
+
+        if ($provider === 'gemma') {
+            $url = trim((string) Setting::get('gemma_api_url', config('ai.gemma.api_url', '')));
+            if ($url === '') {
+                return response()->json([
+                    'error' => 'No hay URL configurada para Gemma. Ve a Ajustes > IA y guarda la URL antes de iniciar el lote.',
+                    'error_type' => 'config',
+                ], 422);
+            }
+            return null;
+        }
+
+        if ($provider === 'deepinfra') {
+            $url = trim((string) Setting::get('deepinfra_api_url', config('ai.deepinfra.api_url', '')));
+            if ($url === '') {
+                return response()->json([
+                    'error' => 'No hay URL configurada para DeepInfra. Ve a Ajustes > IA y guarda la URL antes de iniciar el lote.',
+                    'error_type' => 'config',
+                ], 422);
+            }
+
+            $key = trim((string) (Setting::get('deepinfra_api_key') ?: config('services.deepinfra.key')));
+            if ($key === '') {
+                return response()->json([
+                    'error' => 'No hay clave API configurada para DeepInfra. Ve a Ajustes > IA y guarda la clave antes de iniciar el lote.',
+                    'error_type' => 'config',
+                ], 422);
+            }
+
+            return null;
+        }
+
+        $apiKey = match ($provider) {
+            'openai' => Setting::get('openai_api_key') ?: config('services.openai.key'),
+            'gemini' => Setting::get('gemini_api_key') ?: config('services.gemini.key'),
+            default  => Setting::get('anthropic_api_key') ?: config('services.anthropic.key'),
+        };
+
+        if (blank($apiKey)) {
+            $providerLabel = match ($provider) {
+                'openai' => 'OpenAI',
+                'gemini' => 'Gemini',
+                default  => 'Anthropic',
+            };
+            return response()->json([
+                'error' => "No hay clave API configurada para {$providerLabel}. Ve a Ajustes > IA y guarda la clave antes de iniciar el lote.",
+                'error_type' => 'config',
+            ], 422);
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve recipe IDs for batch enhancement.
+     * - mode=ids: uses explicit IDs from UI selection.
+     * - mode=pending: fetches recipes without ai_enhanced_at using optional filters.
+     */
+    private function resolveBatchRecipeIds(Request $request): array
+    {
+        $mode = $request->input('mode', 'ids');
+
+        if ($mode === 'pending') {
+            $limit = (int) $request->input('limit', 500);
+            $query = Recipe::query()
+                ->whereNull('ai_enhanced_at')
+                ->orderBy('id');
+
+            if ($request->filled('category_slug')) {
+                $slug = $request->string('category_slug')->toString();
+                $query->whereHas('categories', fn ($q) => $q->where('slug', $slug));
+            }
+
+            if ($limit === 0) {
+                return $query->pluck('id')->all();
+            }
+
+            return $query->limit($limit)->pluck('id')->all();
+        }
+
+        return collect($request->input('ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Returns a summary of active prompt customization settings used by RecipeEnhancer.
+     */
+    private function resolvePromptConfigurationSummary(): array
+    {
+        $provider = (string) Setting::get('ai_provider', 'anthropic');
+        $model = match ($provider) {
+            'local'  => (Setting::get('local_ai_model', 'llama3.2') ?: 'llama3.2'),
+            'openai' => (Setting::get('openai_model') ?: config('ai.openai.model', 'gpt-4.1-mini')),
+            'gemini' => (Setting::get('gemini_model') ?: config('ai.gemini.model', 'gemini-2.5-flash')),
+            'gemma'  => (Setting::get('gemma_model') ?: config('ai.gemma.model', 'gemma3:4b')),
+            'deepinfra' => (Setting::get('deepinfra_model') ?: config('ai.deepinfra.model', 'meta-llama/Llama-3.3-70B-Instruct')),
+            'anthropic' => (Setting::get('anthropic_model') ?: config('ai.anthropic.model', 'claude-sonnet-4-6')),
+            default  => 'unknown',
+        };
+
+        $fields = [
+            'seo_title',
+            'seo_description',
+            'story',
+            'tips_secrets',
+            'faq',
+            'amazon_keywords',
+            'internal_links',
+        ];
+
+        $overrides = [];
+        foreach ($fields as $field) {
+            $custom = trim((string) Setting::get('ai_prompt_' . $field, ''));
+            $overrides[$field] = $custom !== '';
+        }
+
+        $active = array_keys(array_filter($overrides, fn ($v) => $v === true));
+        $activeLabel = empty($active) ? 'ninguna' : implode(', ', $active);
+
+        return [
+            'provider' => $provider,
+            'model' => $model,
+            'overrides' => $overrides,
+            'message' => "Prompt config -> provider: {$provider}, model: {$model}, overrides activos: {$activeLabel}",
+        ];
     }
 }

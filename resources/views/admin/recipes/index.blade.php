@@ -98,12 +98,37 @@
     {{-- AI Batch config (data URLs for JS) --}}
     <div id="ai-batch-config"
          data-ai-batch-url="{{ route('admin.recipes.ai.batch') }}"
-         data-ai-batch-progress-url="{{ url('/admin/recetas/mejorar-ia/lote/__BATCH_ID__/progreso') }}">
+         data-ai-batch-progress-url="{{ url('/admin/recetas/mejorar-ia/lote/__BATCH_ID__/progreso') }}"
+         data-ai-batch-pending-limit="1000">
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" id="ai-batch-pending-btn"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347A3.75 3.75 0 0113.5 21h-3a3.75 3.75 0 01-2.651-1.098l-.347-.347z"/>
+            </svg>
+            Procesar pendientes IA
+        </button>
+        <p class="text-xs text-zinc-500">Ejecuta lote automático usando el prompt de IA del sistema en recetas sin `ai_enhanced_at`.</p>
     </div>
 
     {{-- ===================== BULK ACTIONS ===================== --}}
     @if(isset($recipes) && $recipes->count() > 0)
     <div>
+        {{-- Quick-select for unenhanced recipes --}}
+        <div class="flex items-center gap-2 mb-2">
+            <button type="button" id="select-unenhanced-btn"
+                    onclick="selectUnenhanced()"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm font-medium transition-colors">
+                <svg class="w-3.5 h-3.5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.347A3.75 3.75 0 0113.5 21h-3a3.75 3.75 0 01-2.651-1.098l-.347-.347z"/>
+                </svg>
+                Seleccionar no mejoradas
+                <span id="unenhanced-count" class="text-xs text-zinc-500"></span>
+            </button>
+        </div>
+
         {{-- Bulk Toolbar (hidden until items selected) --}}
         <div id="bulk-bar"
              class="hidden items-center gap-3 px-4 py-3 mb-3 bg-amber-950/60 border border-amber-700/60 rounded-xl transition-all">
@@ -179,6 +204,7 @@
                             {{-- Row checkbox --}}
                             <td class="px-4 py-3 w-10">
                                 <input type="checkbox" name="ids[]" value="{{ $recipe->id }}"
+                                       data-enhanced="{{ $recipe->ai_enhanced_at ? '1' : '0' }}"
                                        class="recipe-checkbox w-4 h-4 rounded border-zinc-600 bg-zinc-700 text-amber-500 cursor-pointer focus:ring-amber-500 focus:ring-offset-zinc-800">
                             </td>
                             <td class="px-4 py-3">
@@ -382,6 +408,12 @@
         const checked = getChecked();
         const total   = getAllCheckboxes().length;
         const count   = checked.length;
+        const unenhanced = document.querySelectorAll('.recipe-checkbox[data-enhanced="0"]').length;
+
+        const unenhancedCount = document.getElementById('unenhanced-count');
+        if (unenhancedCount) {
+            unenhancedCount.textContent = '(' + unenhanced + ')';
+        }
 
         if (count > 0) {
             bulkBar.classList.remove('hidden');
@@ -461,6 +493,17 @@
         selectAll.indeterminate = false;
         updateBar();
     };
+
+    // Select only recipes not enhanced by AI yet.
+    window.selectUnenhanced = function () {
+        getAllCheckboxes().forEach(cb => {
+            cb.checked = cb.dataset.enhanced === '0';
+        });
+        updateBar();
+    };
+
+    // Initial counters/state
+    updateBar();
 })();
 </script>
 @endpush

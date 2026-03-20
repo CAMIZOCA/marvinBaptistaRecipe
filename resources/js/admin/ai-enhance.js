@@ -32,6 +32,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // Store full suggested object for save step
     var _suggested = {};
 
+    function logAi(tag, payload) {
+        try {
+            console.info('[AI Enhance][' + tag + ']', payload);
+            if (payload !== undefined) {
+                console.info('[AI Enhance JSON][' + tag + ']\n' + JSON.stringify(payload, null, 2));
+            }
+        } catch (_) {}
+    }
+
     // ── Copy-prompt modal elements ──────────────────────────────────
     var promptModal            = document.getElementById('prompt-modal');
     var promptModalClose       = document.getElementById('prompt-modal-close');
@@ -150,13 +159,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
 
+        var reqBody = {};
+        logAi('REQUEST checkConnection', { url: testUrl, body: reqBody });
+
         return fetch(testUrl, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-            body:    JSON.stringify({}),
+            body:    JSON.stringify(reqBody),
         })
-        .then(function (res) { return res.json().then(function (d) { return { httpOk: res.ok, data: d }; }); })
+        .then(function (res) { return res.json().then(function (d) { return { httpOk: res.ok, status: res.status, data: d }; }); })
         .then(function (r) {
+            logAi('RESPONSE checkConnection', r);
             if (r.data.ok) {
                 setStatus('ok', r.data.message || 'Conectado');
                 if (!silent) clearError();
@@ -235,12 +248,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     var f = FIELDS[i];
                     if (btnText) btnText.textContent = 'Campo ' + (i + 1) + '/' + FIELDS.length + ': ' + f.label + '…';
                     try {
+                        var fieldPayload = { field: f.id };
+                        logAi('REQUEST field', { url: fieldUrl, payload: fieldPayload });
                         var res  = await fetch(fieldUrl, {
                             method:  'POST',
                             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                            body:    JSON.stringify({ field: f.id }),
+                            body:    JSON.stringify(fieldPayload),
                         });
                         var data = await res.json();
+                        logAi('RESPONSE field', { field: f.id, status: res.status, ok: res.ok, data: data });
                         if (res.ok && data.success) {
                             collectedSuggested[data.field] = data.value;
                             collectedCurrent[data.field]   = data.current;
@@ -304,16 +320,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
             var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
 
+            var savePayload = { fields: fields };
+            logAi('REQUEST save', { url: saveUrl, payload: savePayload });
             fetch(saveUrl, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-                body:    JSON.stringify({ fields: fields }),
+                body:    JSON.stringify(savePayload),
             })
             .then(function (res) {
+                logAi('RESPONSE save (raw)', { status: res.status, ok: res.ok });
                 if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || 'Error al guardar'); });
                 return res.json();
             })
-            .then(function () {
+            .then(function (data) {
+                logAi('RESPONSE save', data);
                 saveBtn.textContent = '¡Guardado!';
                 saveBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
                 saveBtn.classList.add('bg-blue-600');
@@ -526,15 +546,18 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             openPromptModal();
             var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+            logAi('REQUEST prompt', { url: promptUrl });
             fetch(promptUrl, {
                 method:  'GET',
                 headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
             })
             .then(function (res) {
+                logAi('RESPONSE prompt (raw)', { status: res.status, ok: res.ok });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 return res.json();
             })
             .then(function (data) {
+                logAi('RESPONSE prompt', data);
                 _promptCurrent = data.current || {};
                 if (promptTextArea)     promptTextArea.value = data.prompt || '';
                 if (promptModalLoading) promptModalLoading.classList.add('hidden');
