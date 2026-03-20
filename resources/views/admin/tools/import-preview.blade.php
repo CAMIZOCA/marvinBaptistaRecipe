@@ -2,6 +2,117 @@
 
 @section('page-title', 'Revisar importación')
 
+@php
+$paisesOpciones = [
+    '— América Latina —' => null,
+    'Argentina'           => 'Argentina',
+    'Bolivia'             => 'Bolivia',
+    'Brasil'              => 'Brasil',
+    'Chile'               => 'Chile',
+    'Colombia'            => 'Colombia',
+    'Costa Rica'          => 'Costa Rica',
+    'Cuba'                => 'Cuba',
+    'Ecuador'             => 'Ecuador',
+    'El Salvador'         => 'El Salvador',
+    'Guatemala'           => 'Guatemala',
+    'Haití'               => 'Haití',
+    'Honduras'            => 'Honduras',
+    'México'              => 'México',
+    'Nicaragua'           => 'Nicaragua',
+    'Panamá'              => 'Panamá',
+    'Paraguay'            => 'Paraguay',
+    'Perú'                => 'Perú',
+    'Puerto Rico'         => 'Puerto Rico',
+    'República Dominicana'=> 'República Dominicana',
+    'Uruguay'             => 'Uruguay',
+    'Venezuela'           => 'Venezuela',
+    '— América del Norte —' => null,
+    'Canadá'              => 'Canadá',
+    'Estados Unidos'      => 'Estados Unidos',
+    '— Europa —'          => null,
+    'Alemania'            => 'Alemania',
+    'Austria'             => 'Austria',
+    'Bélgica'             => 'Bélgica',
+    'Bulgaria'            => 'Bulgaria',
+    'Croacia'             => 'Croacia',
+    'Dinamarca'           => 'Dinamarca',
+    'Eslovaquia'          => 'Eslovaquia',
+    'Eslovenia'           => 'Eslovenia',
+    'España'              => 'España',
+    'Estonia'             => 'Estonia',
+    'Finlandia'           => 'Finlandia',
+    'Francia'             => 'Francia',
+    'Grecia'              => 'Grecia',
+    'Hungría'             => 'Hungría',
+    'Irlanda'             => 'Irlanda',
+    'Islandia'            => 'Islandia',
+    'Italia'              => 'Italia',
+    'Letonia'             => 'Letonia',
+    'Lituania'            => 'Lituania',
+    'Luxemburgo'          => 'Luxemburgo',
+    'Malta'               => 'Malta',
+    'Noruega'             => 'Noruega',
+    'Países Bajos'        => 'Países Bajos',
+    'Polonia'             => 'Polonia',
+    'Portugal'            => 'Portugal',
+    'Reino Unido'         => 'Reino Unido',
+    'República Checa'     => 'República Checa',
+    'Rumanía'             => 'Rumanía',
+    'Suecia'              => 'Suecia',
+    'Suiza'               => 'Suiza',
+    'Ucrania'             => 'Ucrania',
+    '— Asia —'            => null,
+    'Arabia Saudita'      => 'Arabia Saudita',
+    'Bangladesh'          => 'Bangladesh',
+    'China'               => 'China',
+    'Corea del Norte'     => 'Corea del Norte',
+    'Corea del Sur'       => 'Corea del Sur',
+    'Emiratos Árabes Unidos' => 'Emiratos Árabes Unidos',
+    'Filipinas'           => 'Filipinas',
+    'India'               => 'India',
+    'Indonesia'           => 'Indonesia',
+    'Irak'                => 'Irak',
+    'Irán'                => 'Irán',
+    'Israel'              => 'Israel',
+    'Japón'               => 'Japón',
+    'Jordania'            => 'Jordania',
+    'Kazajistán'          => 'Kazajistán',
+    'Líbano'              => 'Líbano',
+    'Malasia'             => 'Malasia',
+    'Mongolia'            => 'Mongolia',
+    'Nepal'               => 'Nepal',
+    'Pakistán'            => 'Pakistán',
+    'Siria'               => 'Siria',
+    'Sri Lanka'           => 'Sri Lanka',
+    'Tailandia'           => 'Tailandia',
+    'Taiwán'              => 'Taiwán',
+    'Turquía'             => 'Turquía',
+    'Vietnam'             => 'Vietnam',
+    '— África —'          => null,
+    'Angola'              => 'Angola',
+    'Argelia'             => 'Argelia',
+    'Camerún'             => 'Camerún',
+    'Egipto'              => 'Egipto',
+    'Etiopía'             => 'Etiopía',
+    'Ghana'               => 'Ghana',
+    'Kenia'               => 'Kenia',
+    'Marruecos'           => 'Marruecos',
+    'Mozambique'          => 'Mozambique',
+    'Nigeria'             => 'Nigeria',
+    'Senegal'             => 'Senegal',
+    'Sudáfrica'           => 'Sudáfrica',
+    'Tanzania'            => 'Tanzania',
+    'Túnez'               => 'Túnez',
+    '— Oceanía —'         => null,
+    'Australia'           => 'Australia',
+    'Nueva Zelanda'       => 'Nueva Zelanda',
+    '— Otras —'           => null,
+    'Internacional'       => 'Internacional',
+    'Mediterránea'        => 'Mediterránea',
+    'Medio Oriente'       => 'Medio Oriente',
+];
+@endphp
+
 @section('content')
 <div class="p-6 space-y-6">
 
@@ -60,16 +171,13 @@
                 <div class="flex gap-2">
                     <select id="bulk-pais" class="flex-1 bg-zinc-700 border border-zinc-600 rounded-lg px-3 py-2 text-zinc-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
                         <option value="">— Sin cambio —</option>
-                        <option value="Ecuador">Ecuador</option>
-                        <option value="México">México</option>
-                        <option value="España">España</option>
-                        <option value="Colombia">Colombia</option>
-                        <option value="Perú">Perú</option>
-                        <option value="Argentina">Argentina</option>
-                        <option value="Venezuela">Venezuela</option>
-                        <option value="Chile">Chile</option>
-                        <option value="Italia">Italia</option>
-                        <option value="Internacional">Internacional</option>
+                        @foreach($paisesOpciones as $label => $value)
+                            @if(is_null($value))
+                                <option disabled>{{ $label }}</option>
+                            @else
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endif
+                        @endforeach
                     </select>
                     <button onclick="applyBulk('pais')"
                             class="px-3 py-2 bg-zinc-600 hover:bg-zinc-500 text-zinc-200 rounded-lg text-xs font-medium transition-colors whitespace-nowrap">
@@ -164,16 +272,13 @@
                                     data-field="pais"
                                     data-row="{{ $idx }}"
                                     class="row-select w-full bg-zinc-700 border border-zinc-600 rounded-lg px-2 py-1.5 text-zinc-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500">
-                                <option value="Ecuador" {{ ($row['pais'] ?? '') === 'Ecuador' ? 'selected' : '' }}>Ecuador</option>
-                                <option value="México" {{ ($row['pais'] ?? '') === 'México' ? 'selected' : '' }}>México</option>
-                                <option value="España" {{ ($row['pais'] ?? '') === 'España' ? 'selected' : '' }}>España</option>
-                                <option value="Colombia" {{ ($row['pais'] ?? '') === 'Colombia' ? 'selected' : '' }}>Colombia</option>
-                                <option value="Perú" {{ ($row['pais'] ?? '') === 'Perú' ? 'selected' : '' }}>Perú</option>
-                                <option value="Argentina" {{ ($row['pais'] ?? '') === 'Argentina' ? 'selected' : '' }}>Argentina</option>
-                                <option value="Venezuela" {{ ($row['pais'] ?? '') === 'Venezuela' ? 'selected' : '' }}>Venezuela</option>
-                                <option value="Chile" {{ ($row['pais'] ?? '') === 'Chile' ? 'selected' : '' }}>Chile</option>
-                                <option value="Italia" {{ ($row['pais'] ?? '') === 'Italia' ? 'selected' : '' }}>Italia</option>
-                                <option value="Internacional" {{ ($row['pais'] ?? 'Internacional') === 'Internacional' ? 'selected' : '' }}>Internacional</option>
+                                @foreach($paisesOpciones as $label => $value)
+                                    @if(is_null($value))
+                                        <option disabled>{{ $label }}</option>
+                                    @else
+                                        <option value="{{ $value }}" {{ ($row['pais'] ?? 'Internacional') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endif
+                                @endforeach
                             </select>
                         </td>
 
