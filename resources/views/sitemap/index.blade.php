@@ -43,7 +43,7 @@
         <priority>0.8</priority>
         @if($recipe->featured_image)
         <image:image>
-            <image:loc>{{ $recipe->featured_image }}</image:loc>
+            <image:loc>{{ Str::startsWith($recipe->featured_image, 'http') ? $recipe->featured_image : asset(ltrim($recipe->featured_image, '/')) }}</image:loc>
             <image:title>{{ htmlspecialchars($recipe->title) }}</image:title>
             @if($recipe->image_alt)
             <image:caption>{{ htmlspecialchars($recipe->image_alt) }}</image:caption>
@@ -65,7 +65,7 @@
         <priority>0.7</priority>
         @if($post->featured_image)
         <image:image>
-            <image:loc>{{ $post->featured_image }}</image:loc>
+            <image:loc>{{ Str::startsWith($post->featured_image, 'http') ? $post->featured_image : asset(ltrim($post->featured_image, '/')) }}</image:loc>
             <image:title>{{ htmlspecialchars($post->title) }}</image:title>
             @if($post->image_alt)
             <image:caption>{{ htmlspecialchars($post->image_alt) }}</image:caption>
