@@ -40,24 +40,58 @@
 @section('schema_org')
 @php
     $totalMin = $totalTime; // ya definido arriba
+    $recipeUrl = route('recipe.show', $recipe->slug);
+    $toAbsoluteUrl = static function (?string $url): ?string {
+        if (!$url) {
+            return null;
+        }
+        if (Str::startsWith($url, ['http://', 'https://'])) {
+            return $url;
+        }
+        return asset(ltrim($url, '/'));
+    };
+    $recipeImageUrl = $toAbsoluteUrl($recipe->featured_image);
+
+    $keywords = collect(preg_split('/[,;]+/', (string) ($recipe->seo_keywords ?? '')))
+        ->merge($recipe->tags?->pluck('name') ?? collect())
+        ->merge($recipe->categories?->pluck('name') ?? collect())
+        ->push($recipe->origin_country)
+        ->push($recipe->title)
+        ->map(fn($value) => trim((string) $value))
+        ->filter()
+        ->unique()
+        ->values()
+        ->take(12)
+        ->implode(', ');
 
     $recipeSchema = [
         '@context'    => 'https://schema.org',
         '@type'       => 'Recipe',
         'name'        => $recipe->title,
         'description' => Str::limit(strip_tags($recipe->description ?? ''), 300),
-        'url'         => route('recipe.show', $recipe->slug),
+        'url'         => $recipeUrl,
         'author'      => ['@type' => 'Person', 'name' => 'Marvin Baptista', 'url' => route('home')],
         'datePublished' => $recipe->published_at?->toIso8601String() ?? $recipe->created_at?->toIso8601String(),
         'dateModified'  => $recipe->updated_at?->toIso8601String(),
-        'recipeCategory'=> $recipe->categories?->first()?->name ?? '',
-        'recipeCuisine' => $recipe->origin_country ?? 'Latinoamericana',
+        'recipeCategory'=> $recipe->categories?->first()?->name ?? 'Recetas',
+        'recipeCuisine' => $recipe->origin_country ?: 'Latinoamericana',
+        'keywords'      => $keywords,
     ];
-    if ($recipe->featured_image)  $recipeSchema['image']       = $recipe->featured_image;
+    if ($recipeImageUrl)          $recipeSchema['image']       = $recipeImageUrl;
     if ($prepMin > 0)             $recipeSchema['prepTime']    = "PT{$prepMin}M";
     if ($cookMin > 0)             $recipeSchema['cookTime']    = "PT{$cookMin}M";  // phpcs:ignore
     if ($totalMin > 0)            $recipeSchema['totalTime']   = "PT{$totalMin}M";
     if ($recipe->servings)        $recipeSchema['recipeYield'] = $recipe->servings . ' porciones';
+    if ($recipe->video_url) {
+        $recipeSchema['video'] = [
+            '@type' => 'VideoObject',
+            'name' => $recipe->title,
+            'description' => Str::limit(strip_tags($recipe->description ?? ''), 200),
+            'contentUrl' => $toAbsoluteUrl($recipe->video_url),
+            'thumbnailUrl' => $recipeImageUrl,
+            'uploadDate' => $recipe->published_at?->toIso8601String() ?? $recipe->created_at?->toIso8601String(),
+        ];
+    }
     if ($recipe->schema_rating_value) {
         $recipeSchema['aggregateRating'] = [
             '@type' => 'AggregateRating',
@@ -73,11 +107,21 @@
         )->values()->toArray();
     }
     if ($recipe->steps->count()) {
-        $recipeSchema['recipeInstructions'] = $recipe->steps->map(fn($s) => [
-            '@type' => 'HowToStep',
-            'name'  => $s->title ?? 'Paso ' . $s->step_number,
-            'text'  => strip_tags($s->description ?? ''),
-        ])->values()->toArray();
+        $recipeSchema['recipeInstructions'] = $recipe->steps->map(function ($s) use ($recipeUrl, $toAbsoluteUrl, $recipeImageUrl) {
+            $stepImageUrl = $toAbsoluteUrl($s->image) ?: $recipeImageUrl;
+            $instruction = [
+                '@type' => 'HowToStep',
+                'name'  => $s->title ?? 'Paso ' . $s->step_number,
+                'text'  => strip_tags($s->description ?? ''),
+                'url'   => $recipeUrl . '#paso-' . ($s->step_number ?? $s->id),
+            ];
+
+            if ($stepImageUrl) {
+                $instruction['image'] = $stepImageUrl;
+            }
+
+            return $instruction;
+        })->values()->toArray();
     }
 
     $breadcrumbItems = [
@@ -361,7 +405,7 @@
                 <ol class="space-y-6">
                     @if($recipe->steps->count() > 0)
                     @foreach($recipe->steps as $step)
-                    <li class="flex gap-5">
+                    <li id="paso-{{ $step->step_number }}" class="flex gap-5 scroll-mt-24">
                         <div class="shrink-0 w-9 h-9 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-sm mt-1">
                             {{ $step->step_number }}
                         </div>

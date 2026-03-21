@@ -3,11 +3,11 @@
 @section('seo_head')
 <title>{{ $book->title }} | Libros | Marvin Baptista</title>
 <meta name="description" content="{{ Str::limit(strip_tags($book->description ?? 'Libro de cocina recomendado por Marvin Baptista.'), 160) }}">
-<link rel="canonical" href="{{ route('store.show', $book->id) }}">
+<link rel="canonical" href="{{ route('store.show', $book->slug) }}">
 <meta property="og:type" content="product">
 <meta property="og:title" content="{{ $book->title }}">
 <meta property="og:description" content="{{ Str::limit(strip_tags($book->description ?? 'Libro de cocina recomendado por Marvin Baptista.'), 160) }}">
-<meta property="og:url" content="{{ route('store.show', $book->id) }}">
+<meta property="og:url" content="{{ route('store.show', $book->slug) }}">
 <meta property="og:site_name" content="Marvin Baptista">
 @if($book->cover_image_url)
 <meta property="og:image" content="{{ $book->cover_image_url }}">

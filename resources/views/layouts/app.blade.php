@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="theme-color" content="#f59e0b">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index,follow,max-image-preview:large">
 
     @yield('seo_head')
 

@@ -3,7 +3,7 @@
 @section('seo_head')
 <title>{{ $ingredient->seo_title ?? 'Recetas con '.$ingredient->name }} | Marvin Baptista</title>
 <meta name="description" content="{{ $ingredient->seo_description ?? 'Descubre todas las recetas con '.$ingredient->name.' en Marvin Baptista.' }}">
-<link rel="canonical" href="/ingredientes/{{ $ingredient->slug }}">
+<link rel="canonical" href="{{ route('ingredient.show', $ingredient->slug) }}">
 <meta property="og:title" content="Recetas con {{ $ingredient->name }} | Marvin Baptista">
 @if($ingredient->image)
 <meta property="og:image" content="{{ $ingredient->image }}">
