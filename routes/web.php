@@ -14,8 +14,11 @@ use App\Http\Controllers\SubcategoryController;
 use Illuminate\Support\Facades\Route;
 
 // Sitemap & robots
-Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
-Route::get('/robots.txt', [SitemapController::class, 'robots'])->name('robots');
+Route::get('/sitemap.xml',        [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/recipe-sitemap.xml', [SitemapController::class, 'recipes'])->name('sitemap.recipes');
+Route::get('/blog-sitemap.xml',   [SitemapController::class, 'blog'])->name('sitemap.blog');
+Route::get('/page-sitemap.xml',   [SitemapController::class, 'pages'])->name('sitemap.pages');
+Route::get('/robots.txt',         [SitemapController::class, 'robots'])->name('robots');
 
 // Home
 Route::get('/', [HomeController::class, 'index'])->name('home');
