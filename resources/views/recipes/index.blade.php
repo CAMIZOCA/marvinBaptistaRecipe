@@ -3,8 +3,12 @@
 @section('seo_head')
 <title>Recetas | Marvin Baptista</title>
 <meta name="description" content="Todas las recetas de cocina latinoamericana y mediterránea. Filtra por dificultad, país de origen y más.">
+@php $hasFilters = request()->hasAny(['search', 'difficulty', 'country', 'sort']); @endphp
+@if($hasFilters)
+<meta name="robots" content="noindex,follow">
+@endif
 <link rel="canonical" href="{{ route('recipes.index') }}">
-@if(isset($recipes))
+@if(isset($recipes) && !$hasFilters)
 @if(!$recipes->onFirstPage())
 <link rel="prev" href="{{ $recipes->previousPageUrl() }}">
 @endif

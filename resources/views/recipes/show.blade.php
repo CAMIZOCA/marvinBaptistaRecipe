@@ -21,7 +21,7 @@
 <meta property="og:description" content="{{ $recipe->seo_description ?? Str::limit(strip_tags($recipe->description ?? ''), 160) }}">
 <meta property="og:url" content="{{ route('recipe.show', $recipe->slug) }}">
 @if($recipe->featured_image)
-<meta property="og:image" content="{{ $recipe->featured_image }}">
+<meta property="og:image" content="{{ Str::startsWith($recipe->featured_image, 'http') ? $recipe->featured_image : asset($recipe->featured_image) }}">
 <meta property="og:image:alt" content="{{ $recipe->image_alt ?? $recipe->title }}">
 @endif
 <meta property="og:site_name" content="Marvin Baptista">
@@ -33,7 +33,7 @@
 <meta name="twitter:title" content="{{ $recipe->seo_title ?? $recipe->title }}">
 <meta name="twitter:description" content="{{ $recipe->seo_description ?? Str::limit(strip_tags($recipe->description ?? ''), 160) }}">
 @if($recipe->featured_image)
-<meta name="twitter:image" content="{{ $recipe->featured_image }}">
+<meta name="twitter:image" content="{{ Str::startsWith($recipe->featured_image, 'http') ? $recipe->featured_image : asset($recipe->featured_image) }}">
 @endif
 @endsection
 
@@ -82,6 +82,12 @@
     if ($cookMin > 0)             $recipeSchema['cookTime']    = "PT{$cookMin}M";  // phpcs:ignore
     if ($totalMin > 0)            $recipeSchema['totalTime']   = "PT{$totalMin}M";
     if ($recipe->servings)        $recipeSchema['recipeYield'] = $recipe->servings . ' porciones';
+    if ($recipe->calories_per_serving) {
+        $recipeSchema['nutrition'] = [
+            '@type'    => 'NutritionInformation',
+            'calories' => $recipe->calories_per_serving . ' kcal',
+        ];
+    }
     if ($recipe->video_url) {
         $recipeSchema['video'] = [
             '@type' => 'VideoObject',

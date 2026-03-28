@@ -25,6 +25,7 @@ class RecipeRequest extends FormRequest
             'cook_time_minutes' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'rest_time_minutes' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'servings' => ['nullable', 'integer', 'min:1'],
+            'calories_per_serving' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'servings_unit' => ['nullable', 'string', 'max:50'],
             'difficulty' => ['required', 'in:easy,medium,hard'],
             'featured_image' => ['nullable', 'string', 'max:500'],

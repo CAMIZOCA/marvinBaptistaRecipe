@@ -3,6 +3,9 @@
 @section('seo_head')
 <title>{{ $category->seo_title ?? $category->name }} | Marvin Baptista</title>
 <meta name="description" content="{{ $category->seo_description ?? 'Recetas de '.$category->name.' en Marvin Baptista.' }}">
+@if(isset($recipes) && $recipes->isEmpty())
+<meta name="robots" content="noindex,follow">
+@endif
 <link rel="canonical" href="{{ route('category.show', $category->slug) }}">
 <meta property="og:title" content="{{ $category->name }} | Marvin Baptista">
 <meta property="og:url" content="{{ route('category.show', $category->slug) }}">

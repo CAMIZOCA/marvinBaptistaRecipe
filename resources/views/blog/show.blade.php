@@ -24,7 +24,7 @@
     "@@type": "Article",
     "headline": "{{ addslashes($post->seo_title ?? $post->title) }}",
     "description": "{{ addslashes($post->seo_description ?? $post->short_excerpt) }}",
-    "image": "{{ $post->featured_image ?? '' }}",
+    "image": "{{ $post->featured_image ? (Str::startsWith($post->featured_image, 'http') ? $post->featured_image : asset($post->featured_image)) : '' }}",
     "author": {
         "@@type": "Person",
         "name": "Marvin Baptista",

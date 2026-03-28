@@ -167,6 +167,12 @@
                                        class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
                             </div>
                             <div>
+                                <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Calorías por porción</label>
+                                <input type="number" name="calories_per_serving" value="{{ old('calories_per_serving', $recipe->calories_per_serving ?? '') }}" min="0" max="9999"
+                                       placeholder="250"
+                                       class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+                            </div>
+                            <div>
                                 <label class="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Dificultad</label>
                                 <select name="difficulty"
                                         class="w-full px-3 py-2 bg-zinc-700 border border-zinc-600 text-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
