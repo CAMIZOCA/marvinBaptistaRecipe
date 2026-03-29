@@ -66,11 +66,15 @@ class SitemapController extends Controller
 
     public function robots(): Response
     {
-        $content = "User-agent: *\n";
-        $content .= "Allow: /\n";
-        $content .= "Disallow: /admin/\n";
-        $content .= "Disallow: /admin\n\n";
-        $content .= "Sitemap: " . config('app.url') . "/sitemap.xml\n";
+        $content = implode("\n", [
+            'User-agent: *',
+            'Allow: /',
+            'Disallow: /admin/',
+            'Disallow: /admin',
+            '',
+            'Sitemap: '.rtrim(config('app.url'), '/').'/sitemap.xml',
+            '',
+        ]);
 
         return response($content, 200)
             ->header('Content-Type', 'text/plain');

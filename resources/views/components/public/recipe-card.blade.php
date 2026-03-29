@@ -5,11 +5,13 @@
     {{-- Image --}}
     <div class="aspect-video overflow-hidden bg-zinc-100 relative">
         @if($recipe->featured_image)
-        <img src="{{ $recipe->featured_image }}"
-             alt="{{ $recipe->image_alt ?? $recipe->title }}"
-             loading="lazy"
-             decoding="async"
-             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+        <x-public.responsive-image
+            :src="$recipe->featured_image"
+            :alt="$recipe->image_alt ?? $recipe->title"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+            :widths="[320, 480, 640, 960]"
+        />
         @else
         <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-100">
             <svg class="w-12 h-12 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +47,7 @@
         {{-- Category --}}
         @if($recipe->categories?->first())
         <a href="{{ route('category.show', $recipe->categories->first()->slug) }}"
-           class="text-xs font-semibold text-amber-600 hover:text-amber-700 uppercase tracking-wider transition-colors">
+           class="text-xs font-semibold text-amber-700 hover:text-amber-800 uppercase tracking-wider transition-colors">
             {{ $recipe->categories->first()->name }}
         </a>
         @endif

@@ -105,8 +105,15 @@
                         </svg>
                     </div>
                     @if($heroRecipe->featured_image)
-                    <img src="{{ $heroRecipe->featured_image }}" alt="{{ $heroRecipe->title }}"
-                         class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    <x-public.responsive-image
+                        :src="$heroRecipe->featured_image"
+                        :alt="$heroRecipe->image_alt ?? $heroRecipe->title"
+                        class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        sizes="{{ $i === 0 ? '(min-width: 1024px) 42vw, 100vw' : '(min-width: 1024px) 20vw, 50vw' }}"
+                        :widths="$i === 0 ? [640, 960, 1280] : [320, 480, 640]"
+                        loading="eager"
+                        fetchpriority="high"
+                    />
                     @endif
                     <div class="absolute inset-0 bg-gradient-to-t from-zinc-900/80 via-transparent to-transparent"></div>
                     <div class="absolute bottom-0 left-0 right-0 p-4">
@@ -175,7 +182,7 @@
                 </div>
             </div>
             <div class="h-px bg-amber-200 flex-1"></div>
-            <a href="{{ route('recipes.index') }}" class="text-sm font-semibold text-amber-600 hover:text-amber-700 shrink-0 transition-colors">
+            <a href="{{ route('recipes.index') }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800 shrink-0 transition-colors">
                 Ver todas →
             </a>
         </div>
@@ -187,8 +194,13 @@
                data-ga-event="recipe_card_click" data-ga-category="home_section" data-ga-label="rapidas - {{ $recipe->title }}">
                 <div class="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-amber-100">
                     @if($recipe->featured_image)
-                    <img src="{{ $recipe->featured_image }}" alt="{{ $recipe->title }}"
-                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    <x-public.responsive-image
+                        :src="$recipe->featured_image"
+                        :alt="$recipe->image_alt ?? $recipe->title"
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        sizes="64px"
+                        :widths="[96, 128, 192]"
+                    />
                     @else
                     <div class="w-full h-full flex items-center justify-center">
                         <svg class="w-7 h-7 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +313,7 @@
         </div>
 
         <div class="sm:hidden mt-6 text-center">
-            <a href="{{ route('recipes.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-amber-600">
+            <a href="{{ route('recipes.index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-amber-700">
                 Ver todas las recetas →
             </a>
         </div>
@@ -351,7 +363,7 @@
                 <p class="text-amber-500 text-sm font-semibold uppercase tracking-wider mb-2">Recién publicadas</p>
                 <h2 class="text-3xl font-bold text-zinc-900">Últimas Recetas</h2>
             </div>
-            <a href="{{ route('recipes.index') }}" class="text-sm font-semibold text-amber-600 hover:text-amber-700 transition-colors">
+            <a href="{{ route('recipes.index') }}" class="text-sm font-semibold text-amber-700 hover:text-amber-800 transition-colors">
                 Ver todas →
             </a>
         </div>
@@ -366,8 +378,13 @@
                 {{-- Imagen --}}
                 <div class="w-28 h-20 rounded-xl overflow-hidden shrink-0 bg-zinc-100">
                     @if($recipe->featured_image)
-                    <img src="{{ $recipe->featured_image }}" alt="{{ $recipe->title }}"
-                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    <x-public.responsive-image
+                        :src="$recipe->featured_image"
+                        :alt="$recipe->image_alt ?? $recipe->title"
+                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        sizes="112px"
+                        :widths="[160, 224, 320]"
+                    />
                     @else
                     <div class="w-full h-full bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
                         <svg class="w-8 h-8 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,7 +397,7 @@
                 {{-- Info --}}
                 <div class="flex-1 min-w-0">
                     @if($recipe->categories?->first())
-                    <span class="text-xs font-semibold text-amber-500 uppercase tracking-wide">
+                    <span class="text-xs font-semibold text-amber-700 uppercase tracking-wide">
                         {{ $recipe->categories->first()->name }}
                     </span>
                     @endif
@@ -423,7 +440,7 @@
 
         {{-- Header --}}
         <div class="text-center mb-10">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-400 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-xs font-semibold uppercase tracking-wider mb-3">
                 📚 Libros Recomendados
             </span>
             <h2 class="text-2xl lg:text-3xl font-bold text-white">Para seguir cocinando</h2>
@@ -439,7 +456,9 @@
                      style="transform: translateX(0%);">
                     @foreach($carouselBooks as $index => $book)
                     <div class="w-full shrink-0 flex flex-col lg:flex-row items-center gap-10 lg:px-8"
-                         data-slide="{{ $index }}">
+                         data-slide="{{ $index }}"
+                         id="book-slide-{{ $index }}"
+                         role="tabpanel">
                         @if($book->cover_image_url)
                         <div class="shrink-0">
                             <img src="{{ $book->cover_image_url }}"
@@ -504,9 +523,13 @@
                 @foreach($carouselBooks as $index => $book)
                 <button role="tab"
                         aria-selected="{{ $index === 0 ? 'true' : 'false' }}"
+                        aria-controls="book-slide-{{ $index }}"
                         aria-label="Libro {{ $index + 1 }}: {{ $book->title }}"
                         data-dot="{{ $index }}"
-                        class="w-2.5 h-2.5 rounded-full transition-colors {{ $index === 0 ? 'bg-amber-500' : 'bg-zinc-600 hover:bg-zinc-400' }}">
+                        tabindex="{{ $index === 0 ? '0' : '-1' }}"
+                        class="w-10 h-10 rounded-full transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-400 {{ $index === 0 ? 'bg-zinc-700' : 'bg-zinc-800 hover:bg-zinc-700' }}">
+                    <span class="sr-only">Ir al libro {{ $index + 1 }}</span>
+                    <span aria-hidden="true" class="block w-2.5 h-2.5 rounded-full {{ $index === 0 ? 'bg-amber-400' : 'bg-zinc-500' }}"></span>
                 </button>
                 @endforeach
             </div>
@@ -541,9 +564,16 @@
         if (dotsEl) {
             dotsEl.querySelectorAll('[data-dot]').forEach(function (dot) {
                 var active = parseInt(dot.dataset.dot, 10) === current;
-                dot.classList.toggle('bg-amber-500', active);
-                dot.classList.toggle('bg-zinc-600', !active);
+                dot.classList.toggle('bg-zinc-700', active);
+                dot.classList.toggle('bg-zinc-800', !active);
+                dot.classList.toggle('hover:bg-zinc-700', !active);
                 dot.setAttribute('aria-selected', active ? 'true' : 'false');
+                dot.setAttribute('tabindex', active ? '0' : '-1');
+                var inner = dot.querySelector('span[aria-hidden="true"]');
+                if (inner) {
+                    inner.classList.toggle('bg-amber-400', active);
+                    inner.classList.toggle('bg-zinc-500', !active);
+                }
             });
         }
     }

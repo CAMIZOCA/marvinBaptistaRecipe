@@ -28,10 +28,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="shortcut icon" href="/favicon.ico">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     @yield('schema_org')
@@ -39,15 +35,36 @@
     {{-- Google Analytics 4 (solo si está configurado en Ajustes → SEO) --}}
     @php $gaId = $settings['google_analytics_id'] ?? null; @endphp
     @if($gaId)
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $gaId }}"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', '{{ $gaId }}', {
-        send_page_view: true,
-        cookie_flags: 'SameSite=None;Secure'
+    window.__gaLoaded = false;
+
+    function loadAnalytics() {
+        if (window.__gaLoaded) return;
+        window.__gaLoaded = true;
+
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id={{ $gaId }}';
+        document.head.appendChild(script);
+
+        gtag('js', new Date());
+        gtag('config', '{{ $gaId }}', {
+            send_page_view: true,
+            cookie_flags: 'SameSite=None;Secure'
+        });
+    }
+
+    ['click', 'scroll', 'keydown', 'touchstart'].forEach(function(eventName) {
+        window.addEventListener(eventName, loadAnalytics, { once: true, passive: true });
     });
+
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(loadAnalytics, { timeout: 3500 });
+    } else {
+        window.setTimeout(loadAnalytics, 3500);
+    }
 
     /* ── Helper global de analytics ─────────────────────────────────────────
        Uso: window._ga.push('nombre_evento', { param: 'valor' })
