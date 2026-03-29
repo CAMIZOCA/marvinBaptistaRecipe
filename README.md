@@ -119,6 +119,33 @@ Specific contributions:
 
 ---
 
+## Deployment Notes
+
+If the domain serves the application directly from the repository's `public/`
+directory, the stock Laravel deployment flow is enough.
+
+If the hosting provider serves the site from a separate folder such as
+`public_html/`, keep these two paths in sync after each deploy:
+
+- Application code: `/home/<user>/marvinbaptista`
+- Public web root: `/home/<user>/public_html`
+
+Recommended deploy sequence for that setup:
+
+```bash
+git pull origin master
+rsync -av --delete /home/<user>/marvinbaptista/public/build/ /home/<user>/public_html/build/
+cp /home/<user>/marvinbaptista/public/.htaccess /home/<user>/public_html/.htaccess
+php /home/<user>/marvinbaptista/artisan optimize:clear
+php /home/<user>/marvinbaptista/artisan config:cache
+php /home/<user>/marvinbaptista/artisan route:cache
+php /home/<user>/marvinbaptista/artisan view:cache
+```
+
+The `public/index.php` file in this repository can resolve the correct Laravel
+base path automatically when it is served from either `public/` or a sibling
+folder such as `public_html/`.
+
 ## Local Setup
 
 **Requirements:** PHP 8.3, Composer, Node.js 20+, SQLite or MySQL.
