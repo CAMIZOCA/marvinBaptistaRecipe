@@ -31,8 +31,14 @@ class SitemapController extends Controller
             ->latest('updated_at')
             ->get();
 
-        $categories  = Category::select('slug', 'updated_at')->get();
-        $ingredients = IngredientIndex::select('slug', 'updated_at')->get();
+        $categories  = Category::select('slug', 'updated_at')
+            ->whereHas('recipes', fn($q) => $q->published())
+            ->get();
+        $ingredients = IngredientIndex::select('slug', 'updated_at', 'name')->get()
+            ->filter(fn($ing) => Recipe::published()
+                ->whereHas('ingredients', fn($q) => $q->where('ingredient_name', 'like', '%'.$ing->name.'%'))
+                ->exists()
+            );
 
         $content = view('sitemap.recipes', compact('recipes', 'categories', 'ingredients'))->render();
 

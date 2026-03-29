@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
 @section('seo_head')
+@php $hasFilter = request()->filled('tipo'); @endphp
+@if($hasFilter)
+<meta name="robots" content="noindex,follow">
+@endif
 <title>Tienda de Libros de Cocina | Marvin Baptista</title>
 <meta name="description" content="Descubre los mejores libros de cocina latinoamericana y mediterránea. Seleccionados con amor para llevar tu cocina al siguiente nivel.">
 <link rel="canonical" href="{{ route('store.index') }}">
